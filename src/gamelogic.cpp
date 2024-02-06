@@ -144,7 +144,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     // Add point lights
     rootNode->children.push_back(light1Node);
     rootNode->children.push_back(light2Node);
-    padNode->children.push_back(light3Node); // light3 moves with the paddle
+    padNode->children.push_back(light3Node);  // light3 moves with the paddle
 
     boxNode->vertexArrayObjectID     = boxVAO;
     boxNode->VAOIndexCount           = box.indices.size();
@@ -163,12 +163,12 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     light2Node->vertexArrayObjectID  = -1;
     light2Node->VAOIndexCount        = 0;
     light2Node->nodeType             = POINT_LIGHT;
-    light1Node->lightID              = 1;
+    light2Node->lightID              = 1;
 
     light3Node->vertexArrayObjectID  = -1;
     light3Node->VAOIndexCount        = 0;
     light3Node->nodeType             = POINT_LIGHT;
-    light1Node->lightID              = 2;
+    light3Node->lightID              = 2;
 
 
     getTimeDeltaSeconds();
@@ -383,7 +383,7 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
         case GEOMETRY: break;
         case POINT_LIGHT: {
             glm::vec4 lightPos = transformationThusFar * glm::vec4(0, 0, 0, 1);
-            glUniform3fv(5, 1, glm::value_ptr(lightPos));
+            glUniform3fv(6, 1, glm::value_ptr(lightPos));
             break;
         }
         case SPOT_LIGHT: break;
@@ -398,10 +398,14 @@ void renderNode(SceneNode* node) {
     // Pass model matrix
     glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
 
+    // Calculate and pass normal matrix
+    glm::mat3 normalMatrix = glm::transpose(glm::inverse(node->currentTransformationMatrix));
+    glUniformMatrix3fv(4, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+
     // Calculate MVP matrix
     glm::mat4 MVP = VP * node->currentTransformationMatrix;
     // Pass MVP matrix
-    glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(MVP));
+    glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(MVP));
 
     switch(node->nodeType) {
         case GEOMETRY:
