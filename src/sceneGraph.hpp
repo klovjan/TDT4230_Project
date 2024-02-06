@@ -28,7 +28,6 @@ struct SceneNode {
         VAOIndexCount = 0;
 
         nodeType = GEOMETRY;
-
 	}
 
 	// A list of all children that belong to this node.
@@ -52,6 +51,8 @@ struct SceneNode {
 
 	// Node type is used to determine how to handle the contents of a node
 	SceneNodeType nodeType;
+
+	unsigned int lightID;
 };
 
 SceneNode* createSceneNode();

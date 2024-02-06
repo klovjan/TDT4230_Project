@@ -37,6 +37,10 @@ SceneNode* rootNode;
 SceneNode* boxNode;
 SceneNode* ballNode;
 SceneNode* padNode;
+// Light nodes
+SceneNode* light1Node;
+SceneNode* light2Node;
+SceneNode* light3Node;
 
 double ballRadius = 3.0f;
 
@@ -50,6 +54,9 @@ const glm::vec3 padDimensions(30, 3, 40);
 
 glm::vec3 ballPosition(0, ballRadius + padDimensions.y, boxDimensions.z / 2);
 glm::vec3 ballDirection(1, 1, 0.2f);
+
+// Moved to global scope to facilitate use in renderNode()
+glm::mat4 VP;
 
 CommandLineOptions options;
 
@@ -126,23 +133,42 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     boxNode  = createSceneNode();
     padNode  = createSceneNode();
     ballNode = createSceneNode();
+    // Add point lights
+    light1Node = createSceneNode();
+    light2Node = createSceneNode();
+    light3Node = createSceneNode();
 
     rootNode->children.push_back(boxNode);
     rootNode->children.push_back(padNode);
     rootNode->children.push_back(ballNode);
+    // Add point lights
+    rootNode->children.push_back(light1Node);
+    rootNode->children.push_back(light2Node);
+    padNode->children.push_back(light3Node); // light3 moves with the paddle
 
-    boxNode->vertexArrayObjectID  = boxVAO;
-    boxNode->VAOIndexCount        = box.indices.size();
+    boxNode->vertexArrayObjectID     = boxVAO;
+    boxNode->VAOIndexCount           = box.indices.size();
 
-    padNode->vertexArrayObjectID  = padVAO;
-    padNode->VAOIndexCount        = pad.indices.size();
+    padNode->vertexArrayObjectID     = padVAO;
+    padNode->VAOIndexCount           = pad.indices.size();
 
-    ballNode->vertexArrayObjectID = ballVAO;
-    ballNode->VAOIndexCount       = sphere.indices.size();
+    ballNode->vertexArrayObjectID    = ballVAO;
+    ballNode->VAOIndexCount          = sphere.indices.size();
 
+    light1Node->vertexArrayObjectID  = -1;
+    light1Node->VAOIndexCount        = 0;
+    light1Node->nodeType             = POINT_LIGHT;
+    light1Node->lightID              = 0;
 
+    light2Node->vertexArrayObjectID  = -1;
+    light2Node->VAOIndexCount        = 0;
+    light2Node->nodeType             = POINT_LIGHT;
+    light1Node->lightID              = 1;
 
-
+    light3Node->vertexArrayObjectID  = -1;
+    light3Node->VAOIndexCount        = 0;
+    light3Node->nodeType             = POINT_LIGHT;
+    light1Node->lightID              = 2;
 
 
     getTimeDeltaSeconds();
@@ -319,7 +345,7 @@ void updateFrame(GLFWwindow* window) {
                     glm::rotate(lookRotation, glm::vec3(0, 1, 0)) *
                     glm::translate(-cameraPosition);
 
-    glm::mat4 VP = projection * cameraTransform;
+    VP = projection * cameraTransform;
 
     // Move and rotate various SceneNodes
     boxNode->position = { 0, -10, -80 };
@@ -334,7 +360,7 @@ void updateFrame(GLFWwindow* window) {
         boxNode->position.z - (boxDimensions.z/2) + (padDimensions.z/2) + (1 - padPositionZ) * (boxDimensions.z - padDimensions.z)
     };
 
-    updateNodeTransformations(rootNode, VP);
+    updateNodeTransformations(rootNode, glm::mat4(1.0f));
 
 
 
@@ -355,7 +381,11 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
 
     switch(node->nodeType) {
         case GEOMETRY: break;
-        case POINT_LIGHT: break;
+        case POINT_LIGHT: {
+            glm::vec4 lightPos = transformationThusFar * glm::vec4(0, 0, 0, 1);
+            glUniform3fv(5, 1, glm::value_ptr(lightPos));
+            break;
+        }
         case SPOT_LIGHT: break;
     }
 
@@ -365,15 +395,20 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
 }
 
 void renderNode(SceneNode* node) {
+    // Pass model matrix
     glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+
+    // Calculate MVP matrix
+    glm::mat4 MVP = VP * node->currentTransformationMatrix;
+    // Pass MVP matrix
+    glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(MVP));
 
     switch(node->nodeType) {
         case GEOMETRY:
             if(node->vertexArrayObjectID != -1) {
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
-            }
-            break;
+            };
         case POINT_LIGHT: break;
         case SPOT_LIGHT: break;
     }
