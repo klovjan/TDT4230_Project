@@ -42,6 +42,8 @@ SceneNode* light1Node;
 SceneNode* light2Node;
 SceneNode* light3Node;
 
+unsigned int NUM_LIGHTS;;
+
 double ballRadius = 3.0f;
 
 // These are heap allocated, because they should not be initialised at the start of the program
@@ -148,6 +150,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     ballNode->VAOIndexCount          = sphere.indices.size();
 
     /* Add point lights */
+    NUM_LIGHTS = 3;
+
     light1Node = createSceneNode();
     light2Node = createSceneNode();
     light3Node = createSceneNode();
@@ -162,10 +166,13 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     light2Node->nodeType             = POINT_LIGHT;
     light2Node->lightID              = 1;
-    light1Node->position             = glm::vec3(-40.0f, 40.0f, 0.0f);
+    light2Node->position             = glm::vec3(-40.0f, 40.0f, 0.0f);
 
     light3Node->nodeType             = POINT_LIGHT;
     light3Node->lightID              = 2;
+    light3Node->position             = glm::vec3(0.0f, 10.0f, 0.0f);
+
+    glUniform1i(6, NUM_LIGHTS);  // Note: doing this here assumes NUM_LIGHTS is constant
     /* Add point lights */
 
 
@@ -178,6 +185,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 }
 
 void updateFrame(GLFWwindow* window) {
+    // Pass number of lights to 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     double timeDelta = getTimeDeltaSeconds();
@@ -344,6 +352,9 @@ void updateFrame(GLFWwindow* window) {
                     glm::rotate(lookRotation, glm::vec3(0, 1, 0)) *
                     glm::translate(-cameraPosition);
 
+    // Pass cameraPosition to fragment shader, for specular lighting
+    glUniform3fv(10, 1, glm::value_ptr(cameraPosition));
+
     VP = projection * cameraTransform;
 
     // Move and rotate various SceneNodes
@@ -382,7 +393,7 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
         case GEOMETRY: break;
         case POINT_LIGHT: {
             glm::vec4 lightPos = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
-            glUniform3fv(6+node->lightID, 1, glm::value_ptr(lightPos));
+            glUniform3fv(7 + node->lightID, 1, glm::value_ptr(lightPos));
             break;
         }
         case SPOT_LIGHT: break;
