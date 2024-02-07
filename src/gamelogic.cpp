@@ -133,18 +133,10 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     boxNode  = createSceneNode();
     padNode  = createSceneNode();
     ballNode = createSceneNode();
-    // Add point lights
-    light1Node = createSceneNode();
-    light2Node = createSceneNode();
-    light3Node = createSceneNode();
-
+    
     rootNode->children.push_back(boxNode);
     rootNode->children.push_back(padNode);
     rootNode->children.push_back(ballNode);
-    // Add point lights
-    rootNode->children.push_back(light1Node);
-    rootNode->children.push_back(light2Node);
-    padNode->children.push_back(light3Node);  // light3 moves with the paddle
 
     boxNode->vertexArrayObjectID     = boxVAO;
     boxNode->VAOIndexCount           = box.indices.size();
@@ -155,20 +147,27 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     ballNode->vertexArrayObjectID    = ballVAO;
     ballNode->VAOIndexCount          = sphere.indices.size();
 
-    light1Node->vertexArrayObjectID  = -1;
-    light1Node->VAOIndexCount        = 0;
+    /* Add point lights */
+    light1Node = createSceneNode();
+    light2Node = createSceneNode();
+    light3Node = createSceneNode();
+
+    rootNode->children.push_back(light1Node);
+    rootNode->children.push_back(light2Node);
+    padNode->children.push_back(light3Node);  // light3 moves with the paddle
+
+    light1Node->position             = glm::vec3(40.0f, 40.0f, 0.0f);
     light1Node->nodeType             = POINT_LIGHT;
     light1Node->lightID              = 0;
 
-    light2Node->vertexArrayObjectID  = -1;
-    light2Node->VAOIndexCount        = 0;
     light2Node->nodeType             = POINT_LIGHT;
     light2Node->lightID              = 1;
+    light1Node->position             = glm::vec3(-40.0f, 40.0f, 0.0f);
 
-    light3Node->vertexArrayObjectID  = -1;
-    light3Node->VAOIndexCount        = 0;
     light3Node->nodeType             = POINT_LIGHT;
     light3Node->lightID              = 2;
+    /* Add point lights */
+
 
 
     getTimeDeltaSeconds();
@@ -382,8 +381,8 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
     switch(node->nodeType) {
         case GEOMETRY: break;
         case POINT_LIGHT: {
-            glm::vec4 lightPos = transformationThusFar * glm::vec4(0, 0, 0, 1);
-            glUniform3fv(6, 1, glm::value_ptr(lightPos));
+            glm::vec4 lightPos = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
+            glUniform3fv(6+node->lightID, 1, glm::value_ptr(lightPos));
             break;
         }
         case SPOT_LIGHT: break;
