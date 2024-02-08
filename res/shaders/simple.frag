@@ -36,7 +36,7 @@ void main()
     float totDiffuseIntensity = 0.0f;
 
     float totSpecularIntensity = 0.0f;
-    const int specularFactor = 32;
+    const int specularFactor = 3;
 
     for (int i = 2; i < numLights; i++) {
         vec3 normLightDir = normalize(lightPos[i] - modelPosition);
@@ -67,4 +67,6 @@ void main()
     specularColor = totSpecularIntensity * vec3(1.0f);
     
     color = vec4(ambientColor + diffuseColor + specularColor, 1.0f);
+
+    //color = vec4(normalize(lightPos1), 1.0f);
 }

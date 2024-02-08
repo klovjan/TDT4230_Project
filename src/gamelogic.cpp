@@ -164,9 +164,9 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     light1Node->nodeType             = POINT_LIGHT;
     light1Node->lightID              = 0;
 
+    light2Node->position             = glm::vec3(-40.0f, 40.0f, 0.0f);
     light2Node->nodeType             = POINT_LIGHT;
     light2Node->lightID              = 1;
-    light2Node->position             = glm::vec3(-40.0f, 40.0f, 0.0f);
 
     light3Node->nodeType             = POINT_LIGHT;
     light3Node->lightID              = 2;
@@ -353,7 +353,8 @@ void updateFrame(GLFWwindow* window) {
                     glm::translate(-cameraPosition);
 
     // Pass cameraPosition to fragment shader, for specular lighting
-    glUniform3fv(10, 1, glm::value_ptr(cameraPosition));
+    glm::vec3 eyePosition = glm::vec3(cameraTransform * glm::vec4(0, 0, 0, 1.0f));
+    glUniform3fv(10, 1, glm::value_ptr(eyePosition));
 
     VP = projection * cameraTransform;
 
@@ -394,6 +395,7 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
         case POINT_LIGHT: {
             glm::vec4 lightPos = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
             glUniform3fv(7 + node->lightID, 1, glm::value_ptr(lightPos));
+            //printf("%f, %f, %f\n", lightPos.x, lightPos.y, lightPos.z);
             break;
         }
         case SPOT_LIGHT: break;
