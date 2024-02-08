@@ -15,13 +15,21 @@ out vec4 color;
 float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453); }
 float dither(vec2 uv) { return (rand(uv)*2.0-1.0) / 256.0; }
 
-vec3 ambientColor = vec3(0.0f);
+// Phong terms
+vec3 ambientColor = vec3(0.1f);
 vec3 diffuseColor = vec3(0.0f);
 vec3 specularColor = vec3(0.0f);
 vec3 emittedColor = vec3(0.0f);
 
+// Phong coefficients
 float totDiffuseIntensity = 0.0f;
 float totSpecularIntensity = 0.0f;
+
+// Attenuation
+float atten = 1.0f;
+float attenCoeffA = 0.001;
+float attenCoeffB = 0.001;
+float attenCoeffC = 0.001;
 
 // Constants
 const vec3 surfaceColor = vec3(1.0f);
@@ -35,9 +43,6 @@ void main()
     vec3 normNormal = normalize(normal);
     vec3 lightPos[] = {lightPos1, lightPos2, lightPos3};
 
-    // Ambient
-    ambientColor = vec3(0.1f, 0.1f, 0.1f);
-
     // Diffuse, Specular
     for (int i = 2; i < numLights; i++) {
         vec3 normLightDir = normalize(lightPos[i] - modelPos);
@@ -45,7 +50,7 @@ void main()
         // Diffuse contribution
         float diffuseIntensity = max(dot(normNormal, normLightDir), 0.0f);
 
-        totDiffuseIntensity += diffuseIntensity;
+        totDiffuseIntensity += diffuseIntensity * atten;
 
         // Specular contribution
         vec3 reflLightDir = reflect(-normLightDir, normNormal);
@@ -53,7 +58,7 @@ void main()
 
         float specularIntensity = max(pow(dot(reflLightDir, normEyeDir), specularFactor), 0.0f);
 
-        totSpecularIntensity += specularIntensity;
+        totSpecularIntensity += specularIntensity * atten;
     }
 
     ambientColor = ambientColor * surfaceColor;
