@@ -2,13 +2,13 @@
 
 in layout(location = 0) vec3 normal;
 in layout(location = 1) vec2 textureCoordinates;
-in layout(location = 2) vec3 modelPosition;
+in layout(location = 2) vec3 modelPos;
 
 uniform layout(location = 6) int numLights;
 uniform layout(location = 7) vec3 lightPos1;
 uniform layout(location = 8) vec3 lightPos2;
 uniform layout(location = 9) vec3 lightPos3;
-uniform layout(location = 10) vec3 cameraPos;
+uniform layout(location = 10) vec3 eyePos;
 
 out vec4 color;
 
@@ -18,55 +18,49 @@ float dither(vec2 uv) { return (rand(uv)*2.0-1.0) / 256.0; }
 vec3 ambientColor = vec3(0.0f);
 vec3 diffuseColor = vec3(0.0f);
 vec3 specularColor = vec3(0.0f);
-vec3 emitted = vec3(0.0f);
+vec3 emittedColor = vec3(0.0f);
+
+float totDiffuseIntensity = 0.0f;
+float totSpecularIntensity = 0.0f;
+
+// Constants
+const vec3 surfaceColor = vec3(1.0f);
+
+const float diffuseCoeff = 0.9f;
+const float specularCoeff = 0.9f;
+const int specularFactor = 80;
 
 void main()
 {
-    vec3 normNormal;
-    normNormal = normalize(normal);
-
+    vec3 normNormal = normalize(normal);
     vec3 lightPos[] = {lightPos1, lightPos2, lightPos3};
-
-    vec3 surfaceColor = vec3(0.7f, 0.7f, 0.7f);
 
     // Ambient
     ambientColor = vec3(0.1f, 0.1f, 0.1f);
 
     // Diffuse, Specular
-    float totDiffuseIntensity = 0.0f;
-
-    float totSpecularIntensity = 0.0f;
-    const int specularFactor = 3;
-
     for (int i = 2; i < numLights; i++) {
-        vec3 normLightDir = normalize(lightPos[i] - modelPosition);
+        vec3 normLightDir = normalize(lightPos[i] - modelPos);
 
         // Diffuse contribution
-        float diffuseIntensity = dot(normLightDir, normNormal);
-
-        if (diffuseIntensity < 0) {
-            diffuseIntensity = 0;
-        }
+        float diffuseIntensity = max(dot(normNormal, normLightDir), 0.0f);
 
         totDiffuseIntensity += diffuseIntensity;
 
         // Specular contribution
         vec3 reflLightDir = reflect(-normLightDir, normNormal);
-        vec3 normEyeDir = normalize(cameraPos);
+        vec3 normEyeDir = normalize(eyePos-modelPos);
 
-        float specularIntensity = pow(dot(normLightDir, normEyeDir), specularFactor);
-
-        if (specularIntensity < 0) {
-            specularIntensity = 0;
-        }
+        float specularIntensity = max(pow(dot(reflLightDir, normEyeDir), specularFactor), 0.0f);
 
         totSpecularIntensity += specularIntensity;
     }
 
+    ambientColor = ambientColor * surfaceColor;
     diffuseColor = totDiffuseIntensity * surfaceColor;
-    specularColor = totSpecularIntensity * vec3(1.0f);
+    specularColor = totSpecularIntensity * surfaceColor;
     
-    color = vec4(ambientColor + diffuseColor + specularColor, 1.0f);
+    color = vec4(emittedColor + ambientColor + diffuseColor*diffuseCoeff + specularColor*specularCoeff, 1.0f);
 
-    //color = vec4(normalize(lightPos1), 1.0f);
+    //color = vec4(normNormal * 0.5f + vec3(0.5f), 1.0f);
 }

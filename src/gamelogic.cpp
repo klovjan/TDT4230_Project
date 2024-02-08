@@ -160,17 +160,17 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     rootNode->children.push_back(light2Node);
     padNode->children.push_back(light3Node);  // light3 moves with the paddle
 
-    light1Node->position             = glm::vec3(40.0f, 40.0f, 0.0f);
+    light1Node->position             = glm::vec3(50.0f, 0.0f, 0.0f);
     light1Node->nodeType             = POINT_LIGHT;
     light1Node->lightID              = 0;
 
-    light2Node->position             = glm::vec3(-40.0f, 40.0f, 0.0f);
+    light2Node->position             = glm::vec3(-50.0f, 0.0f, 0.0f);
     light2Node->nodeType             = POINT_LIGHT;
     light2Node->lightID              = 1;
 
+    light3Node->position             = glm::vec3(0.0f, 20.0f, 0.0f);
     light3Node->nodeType             = POINT_LIGHT;
     light3Node->lightID              = 2;
-    light3Node->position             = glm::vec3(0.0f, 10.0f, 0.0f);
 
     glUniform1i(6, NUM_LIGHTS);  // Note: doing this here assumes NUM_LIGHTS is constant
     /* Add point lights */
@@ -352,8 +352,8 @@ void updateFrame(GLFWwindow* window) {
                     glm::rotate(lookRotation, glm::vec3(0, 1, 0)) *
                     glm::translate(-cameraPosition);
 
-    // Pass cameraPosition to fragment shader, for specular lighting
-    glm::vec3 eyePosition = glm::vec3(cameraTransform * glm::vec4(0, 0, 0, 1.0f));
+    // Pass camera position to fragment shader, for specular lighting
+    glm::vec3 eyePosition = glm::vec3(cameraTransform * glm::vec4(0, 0, 0, 1));
     glUniform3fv(10, 1, glm::value_ptr(eyePosition));
 
     VP = projection * cameraTransform;
@@ -395,7 +395,6 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
         case POINT_LIGHT: {
             glm::vec4 lightPos = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
             glUniform3fv(7 + node->lightID, 1, glm::value_ptr(lightPos));
-            //printf("%f, %f, %f\n", lightPos.x, lightPos.y, lightPos.z);
             break;
         }
         case SPOT_LIGHT: break;
