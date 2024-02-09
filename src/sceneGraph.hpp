@@ -52,7 +52,9 @@ struct SceneNode {
 	// Node type is used to determine how to handle the contents of a node
 	SceneNodeType nodeType;
 
+	// Specifically if the SceneNode represents a light source
 	unsigned int lightID;
+	glm::vec3 lightColor;
 };
 
 SceneNode* createSceneNode();

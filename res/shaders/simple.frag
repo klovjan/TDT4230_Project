@@ -1,16 +1,24 @@
 #version 430 core
 
+#define MAX_LIGHTS 10
+
+struct LightSource {
+    vec3 coord;
+    vec3 color;
+};
+
 in layout(location = 0) vec3 normal;
 in layout(location = 1) vec2 textureCoordinates;
 in layout(location = 2) vec3 modelPos;
 
 uniform layout(location = 6) int numLights;
-uniform layout(location = 7) vec3 lightPos1;
-uniform layout(location = 8) vec3 lightPos2;
-uniform layout(location = 9) vec3 lightPos3;
+uniform layout(location = 7) vec3 lightPos0;
+uniform layout(location = 8) vec3 lightPos1;
+uniform layout(location = 9) vec3 lightPos2;
 uniform layout(location = 10) vec3 eyePos;
 uniform layout(location = 11) vec3 ballPos;
 uniform layout(location = 12) float ballRadius;
+uniform LightSource lightSource[MAX_LIGHTS];
 
 out vec4 color;
 
@@ -20,8 +28,8 @@ float dither(vec2 uv) { return (rand(uv)*2.0-1.0) / 256.0; }
 vec3 reject(vec3 from, vec3 onto) { return from - onto*(dot(from, onto)/dot(onto, onto)); }
 
 // Phong intensities
-float totDiffuseIntensity = 0.0f;
-float totSpecularIntensity = 0.0f;
+vec3 totDiffuseIntensityRGB = vec3(0.0f, 0.0f, 0.0f);
+vec3 totSpecularIntensityRGB = vec3(0.0f, 0.0f, 0.0f);
 
 // Phong terms
 vec3 ambientColor = vec3(0.0f);
@@ -47,9 +55,10 @@ vec3 noise = vec3(0.0f);
 const vec3 surfaceColor = vec3(1.0f);
 
 void main()
-{
-    vec3 normNormal = normalize(normal);
-    vec3 lightPos[] = {lightPos1, lightPos2, lightPos3};
+{   
+    vec3 normNormal = normalize(normal);  // Normalize interpolated normals
+
+//    vec3 lightPos[] = {lightPos0, lightPos1, lightPos2};
 
     // Vector from fragment to ball -- for ball shadows
     vec3 ballDir = ballPos - modelPos;
@@ -59,7 +68,7 @@ void main()
 
     // Diffuse, Specular
     for (int i = 0; i < 3; i++) {
-        vec3 lightDir = lightPos[i] - modelPos;
+        vec3 lightDir = lightSource[i].coord - modelPos;
         vec3 normLightDir = normalize(lightDir);
 
         // Ball shadows
@@ -82,21 +91,21 @@ void main()
         // Diffuse contribution
         float diffuseIntensity = max(dot(normNormal, normLightDir), 0.0f);
 
-        totDiffuseIntensity += diffuseIntensity * atten;
+        totDiffuseIntensityRGB += diffuseIntensity * atten * lightSource[i].color;
 
 
         // Specular contribution
         vec3 normReflLightDir = reflect(-normLightDir, normNormal);
         vec3 normEyeDir = normalize(eyePos-modelPos);
 
-        float specularIntensity = pow(max(dot(normReflLightDir, normEyeDir), 0.0f), specularFactor);
+        float specularIntensityRGB = pow(max(dot(normReflLightDir, normEyeDir), 0.0f), specularFactor);
 
-        totSpecularIntensity += specularIntensity * atten;
+        totSpecularIntensityRGB += specularIntensityRGB * atten * lightSource[i].color;
     }
 
     ambientColor = ambientColor * surfaceColor;
-    diffuseColor = totDiffuseIntensity * surfaceColor;
-    specularColor = totSpecularIntensity * surfaceColor;
+    diffuseColor = totDiffuseIntensityRGB * surfaceColor;
+    specularColor = totSpecularIntensityRGB;
 
     // Dithering
     noise = vec3(dither(textureCoordinates));

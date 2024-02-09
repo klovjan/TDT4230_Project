@@ -38,9 +38,9 @@ SceneNode* boxNode;
 SceneNode* ballNode;
 SceneNode* padNode;
 // Light nodes
+SceneNode* light0Node;
 SceneNode* light1Node;
 SceneNode* light2Node;
-SceneNode* light3Node;
 
 unsigned int NUM_LIGHTS;;
 
@@ -152,29 +152,31 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     /* Add point lights */
     NUM_LIGHTS = 3;
 
+    light0Node = createSceneNode();
     light1Node = createSceneNode();
     light2Node = createSceneNode();
-    light3Node = createSceneNode();
 
+    rootNode->children.push_back(light0Node);
     rootNode->children.push_back(light1Node);
-    rootNode->children.push_back(light2Node);
-    padNode->children.push_back(light3Node);  // light3 moves with the paddle
+    padNode->children.push_back(light2Node);  // light2Node moves with the paddle
 
-    light1Node->position             = glm::vec3(50.0f, 0.0f, 0.0f);
+    light0Node->position             = glm::vec3(50.0f, 0.0f, 0.0f);
+    light0Node->nodeType             = POINT_LIGHT;
+    light0Node->lightColor           = glm::vec3(1.0f, 0.0f, 0.0f);
+    light0Node->lightID              = 0;
+
+    light1Node->position             = glm::vec3(-50.0f, 0.0f, 0.0f);
     light1Node->nodeType             = POINT_LIGHT;
-    light1Node->lightID              = 0;
+    light1Node->lightColor           = glm::vec3(0.0f, 1.0f, 0.0f);
+    light1Node->lightID              = 1;
 
-    light2Node->position             = glm::vec3(-50.0f, 0.0f, 0.0f);
+    light2Node->position             = glm::vec3(0.0f, 25.0f, 20.0f);
     light2Node->nodeType             = POINT_LIGHT;
-    light2Node->lightID              = 1;
-
-    light3Node->position             = glm::vec3(0.0f, 25.0f, 20.0f);
-    light3Node->nodeType             = POINT_LIGHT;
-    light3Node->lightID              = 2;
+    light2Node->lightColor           = glm::vec3(0.0f, 0.0f, 1.0f);
+    light2Node->lightID              = 2;
 
     glUniform1i(6, NUM_LIGHTS);  // Note: doing this here assumes NUM_LIGHTS is constant
     /* Add point lights */
-
 
 
     getTimeDeltaSeconds();
@@ -393,8 +395,14 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
     switch(node->nodeType) {
         case GEOMETRY: break;
         case POINT_LIGHT: {
-            glm::vec4 lightPos = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
-            glUniform3fv(7 + node->lightID, 1, glm::value_ptr(lightPos));
+            glm::vec4 lightCoord = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
+
+            GLint coordLocation = shader->getUniformFromName(fmt::format("lightSource[{}].coord", node->lightID));
+            GLint colorLocation = shader->getUniformFromName(fmt::format("lightSource[{}].color", node->lightID));
+
+            glUniform3fv(coordLocation, 1, glm::value_ptr(lightCoord));
+            glUniform3fv(colorLocation, 1, glm::value_ptr(node->lightColor));
+
             break;
         }
         case SPOT_LIGHT: break;
