@@ -168,7 +168,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     light2Node->nodeType             = POINT_LIGHT;
     light2Node->lightID              = 1;
 
-    light3Node->position             = glm::vec3(0.0f, 20.0f, 0.0f);
+    light3Node->position             = glm::vec3(0.0f, 25.0f, 20.0f);
     light3Node->nodeType             = POINT_LIGHT;
     light3Node->lightID              = 2;
 
@@ -417,6 +417,11 @@ void renderNode(SceneNode* node) {
     glm::mat4 MVP = VP * node->currentTransformationMatrix;
     // Pass MVP matrix
     glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(MVP));
+
+    // For shadow calculation
+    glm::vec3 ballPos = glm::vec3(ballNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1));
+    glUniform3fv(11, 1, glm::value_ptr(ballPos));
+    glUniform1f(12, (float) ballRadius);
 
     switch(node->nodeType) {
         case GEOMETRY:
