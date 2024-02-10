@@ -12,9 +12,6 @@ in layout(location = 1) vec2 textureCoordinates;
 in layout(location = 2) vec3 modelPos;
 
 uniform layout(location = 6) int numLights;
-uniform layout(location = 7) vec3 lightPos0;
-uniform layout(location = 8) vec3 lightPos1;
-uniform layout(location = 9) vec3 lightPos2;
 uniform layout(location = 10) vec3 eyePos;
 uniform layout(location = 11) vec3 ballPos;
 uniform layout(location = 12) float ballRadius;
@@ -65,8 +62,6 @@ void main()
 {   
     vec3 normNormal = normalize(normal);  // Normalize interpolated normals
 
-//    vec3 lightPos[] = {lightPos0, lightPos1, lightPos2};
-
     // Vector from fragment to ball -- for ball shadows
     vec3 ballDir = ballPos - modelPos;
 
@@ -92,7 +87,7 @@ void main()
             }
             else {
                 // The light is obscured by the ball; move on to next light source
-                //continue;
+                continue;
             }
         }
         else if (rejectionLength < softShadowBallRadius) {

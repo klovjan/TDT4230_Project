@@ -156,6 +156,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     light1Node = createSceneNode();
     light2Node = createSceneNode();
 
+    //rootNode->children.push_back(light0Node);
+    //rootNode->children.push_back(light1Node);
     padNode->children.push_back(light0Node);
     padNode->children.push_back(light1Node);
     padNode->children.push_back(light2Node);  // light2Node moves with the paddle
