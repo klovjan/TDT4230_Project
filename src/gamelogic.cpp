@@ -156,16 +156,16 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     light1Node = createSceneNode();
     light2Node = createSceneNode();
 
-    rootNode->children.push_back(light0Node);
-    rootNode->children.push_back(light1Node);
+    padNode->children.push_back(light0Node);
+    padNode->children.push_back(light1Node);
     padNode->children.push_back(light2Node);  // light2Node moves with the paddle
 
-    light0Node->position             = glm::vec3(50.0f, 0.0f, 0.0f);
+    //light0Node->position             = glm::vec3(50.0f, 0.0f, -60.0f);
     light0Node->nodeType             = POINT_LIGHT;
     light0Node->lightColor           = glm::vec3(1.0f, 0.0f, 0.0f);
     light0Node->lightID              = 0;
 
-    light1Node->position             = glm::vec3(-50.0f, 0.0f, 0.0f);
+    //light1Node->position             = glm::vec3(-50.0f, 0.0f, -60.0f);
     light1Node->nodeType             = POINT_LIGHT;
     light1Node->lightColor           = glm::vec3(0.0f, 1.0f, 0.0f);
     light1Node->lightID              = 1;
@@ -174,6 +174,9 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     light2Node->nodeType             = POINT_LIGHT;
     light2Node->lightColor           = glm::vec3(0.0f, 0.0f, 1.0f);
     light2Node->lightID              = 2;
+
+    light0Node->position = glm::vec3(5.0f, 25.0f, 20.0f);
+    light1Node->position = glm::vec3(-5.0f, 25.0f, 20.0f);
 
     glUniform1i(6, NUM_LIGHTS);  // Note: doing this here assumes NUM_LIGHTS is constant
     /* Add point lights */

@@ -42,14 +42,21 @@ const float diffuseCoeff = 0.6f;
 const float specularCoeff = 0.5f;
 const int specularFactor = 80;
 
-// Attenuation
+// Attenuation factor
 float atten = 1.0f;
+
+// Attenuation coefficients
 float attenCoeffA = 0.005f;
 float attenCoeffB = 0.003f;
 float attenCoeffC = 0.001f;
 
 // Dithering
 vec3 noise = vec3(0.0f);
+
+// Shadows
+bool noShadow = false;
+float softShadowBallRadius = ballRadius + 1.5;
+float softShadowFactor = 1.0f;
 
 // Constants
 const vec3 surfaceColor = vec3(1.0f);
@@ -72,15 +79,30 @@ void main()
         vec3 normLightDir = normalize(lightDir);
 
         // Ball shadows
+        softShadowFactor = 1.0f;
+
+        if (length(lightDir) < length(ballDir) || dot(lightDir, ballDir) < 0.0f) {
+            noShadow = true;
+        }
+
         float rejectionLength = length(reject(ballDir, lightDir));
         if (rejectionLength < ballRadius) {
-            if (length(lightDir) < length(ballDir) || dot(lightDir, ballDir) < 0.0f) {
+            if (noShadow) {
                 ;
             }
             else {
-                continue;
+                // The light is obscured by the ball; move on to next light source
+                //continue;
             }
         }
+        else if (rejectionLength < softShadowBallRadius) {
+            // Redundancy in order to prevent calculating unneccesary dot product for every fragment
+            if (!noShadow) {
+                // softShadowFactor is near 0 when fragment is near solid shadow
+                softShadowFactor = (rejectionLength - ballRadius) / (softShadowBallRadius - ballRadius);
+            }
+        }
+            
 
 
         // Attenuation
@@ -91,7 +113,7 @@ void main()
         // Diffuse contribution
         float diffuseIntensity = max(dot(normNormal, normLightDir), 0.0f);
 
-        totDiffuseIntensityRGB += diffuseIntensity * atten * lightSource[i].color;
+        totDiffuseIntensityRGB += diffuseIntensity * atten * lightSource[i].color * softShadowFactor;
 
 
         // Specular contribution
@@ -100,7 +122,7 @@ void main()
 
         float specularIntensityRGB = pow(max(dot(normReflLightDir, normEyeDir), 0.0f), specularFactor);
 
-        totSpecularIntensityRGB += specularIntensityRGB * atten * lightSource[i].color;
+        totSpecularIntensityRGB += specularIntensityRGB * atten * lightSource[i].color * softShadowFactor;
     }
 
     ambientColor = ambientColor * surfaceColor;
