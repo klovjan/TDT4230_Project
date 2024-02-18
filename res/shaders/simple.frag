@@ -37,14 +37,14 @@ vec3 emittedColor = vec3(0.0f);
 // Phong coefficients
 const float diffuseCoeff = 0.6f;
 const float specularCoeff = 0.5f;
-const int specularFactor = 80;
+const int specularFactor = 64;
 
 // Attenuation factor
 float atten = 1.0f;
 
 // Attenuation coefficients
-float attenCoeffA = 0.005f;
-float attenCoeffB = 0.003f;
+float attenCoeffA = 0.009f;
+float attenCoeffB = 0.001f;
 float attenCoeffC = 0.001f;
 
 // Dithering
@@ -66,7 +66,7 @@ void main()
     vec3 ballDir = ballPos - modelPos;
 
     // Ambient
-    ambientColor = vec3(0.02f);
+    ambientColor = vec3(0.05f);
 
     // Diffuse, Specular
     for (int i = 0; i < 3; i++) {
@@ -81,21 +81,13 @@ void main()
         }
 
         float rejectionLength = length(reject(ballDir, lightDir));
-        if (rejectionLength < ballRadius) {
-            if (noShadow) {
-                ;
-            }
-            else {
-                // The light is obscured by the ball; move on to next light source
-                continue;
-            }
+        if (rejectionLength < ballRadius && !noShadow) {
+            // The light is obscured by the ball; jump to next light source
+            continue;
         }
-        else if (rejectionLength < softShadowBallRadius) {
-            // Redundancy in order to prevent calculating unneccesary dot product for every fragment
-            if (!noShadow) {
-                // softShadowFactor is near 0 when fragment is near solid shadow
-                softShadowFactor = (rejectionLength - ballRadius) / (softShadowBallRadius - ballRadius);
-            }
+        else if (rejectionLength < softShadowBallRadius && !noShadow) {
+            // The light ray is close enough to the ball; make soft shadow
+            softShadowFactor = (rejectionLength - ballRadius) / (softShadowBallRadius - ballRadius);
         }
             
 
