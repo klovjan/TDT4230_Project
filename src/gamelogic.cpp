@@ -164,17 +164,17 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     //light0Node->position             = glm::vec3(50.0f, 0.0f, -60.0f);
     light0Node->nodeType             = POINT_LIGHT;
-    light0Node->lightColor           = glm::vec3(1.0f, 0.0f, 0.0f);
+    light0Node->lightColor           = glm::vec3(1.0f, 1.0f, 1.0f);
     light0Node->lightID              = 0;
 
     //light1Node->position             = glm::vec3(-50.0f, 0.0f, -60.0f);
     light1Node->nodeType             = POINT_LIGHT;
-    light1Node->lightColor           = glm::vec3(0.0f, 1.0f, 0.0f);
+    light1Node->lightColor           = glm::vec3(1.0f, 1.0f, 1.0f);
     light1Node->lightID              = 1;
 
     light2Node->position             = glm::vec3(0.0f, 25.0f, 20.0f);
     light2Node->nodeType             = POINT_LIGHT;
-    light2Node->lightColor           = glm::vec3(0.0f, 0.0f, 1.0f);
+    light2Node->lightColor           = glm::vec3(1.0f, 1.0f, 1.0f);
     light2Node->lightID              = 2;
 
     light0Node->position = glm::vec3(5.0f, 25.0f, 20.0f);
@@ -379,10 +379,6 @@ void updateFrame(GLFWwindow* window) {
     };
 
     updateNodeTransformations(rootNode, glm::mat4(1.0f));
-
-
-
-
 }
 
 void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar) {
