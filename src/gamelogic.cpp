@@ -37,10 +37,13 @@ SceneNode* rootNode;
 SceneNode* boxNode;
 SceneNode* ballNode;
 SceneNode* padNode;
+// Texture nodes
+SceneNode* textboxNode;
 // Light nodes
 SceneNode* light0Node;
 SceneNode* light1Node;
 SceneNode* light2Node;
+
 
 unsigned int NUM_LIGHTS;;
 
@@ -105,6 +108,25 @@ void mouseCallback(GLFWwindow* window, double x, double y) {
 // };
 // LightSource lightSources[/*Put number of light sources you want here*/];
 
+int setUpTexture(PNGImage image) {
+    GLuint textureID = -1;
+    
+    // Generate and populate texture
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height,
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, image.pixels.data());
+
+    // Anti-aliasing settings
+    glGenerateMipmap(GL_TEXTURE_2D);
+    // -- minification
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+    // -- magnification
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    return textureID;
+}
+
 void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     buffer = new sf::SoundBuffer();
     if (!buffer->loadFromFile("../res/Hall of the Mountain King.ogg")) {
@@ -156,18 +178,18 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     light1Node = createSceneNode();
     light2Node = createSceneNode();
 
-    //rootNode->children.push_back(light0Node);
-    //rootNode->children.push_back(light1Node);
-    padNode->children.push_back(light0Node);
-    padNode->children.push_back(light1Node);
+    rootNode->children.push_back(light0Node);
+    rootNode->children.push_back(light1Node);
+    //padNode->children.push_back(light0Node);
+    //padNode->children.push_back(light1Node);
     padNode->children.push_back(light2Node);  // light2Node moves with the paddle
 
-    //light0Node->position             = glm::vec3(50.0f, 0.0f, -60.0f);
+    light0Node->position             = glm::vec3(50.0f, 0.0f, -60.0f);
     light0Node->nodeType             = POINT_LIGHT;
     light0Node->lightColor           = glm::vec3(1.0f, 1.0f, 1.0f);
     light0Node->lightID              = 0;
 
-    //light1Node->position             = glm::vec3(-50.0f, 0.0f, -60.0f);
+    light1Node->position             = glm::vec3(-50.0f, 0.0f, -60.0f);
     light1Node->nodeType             = POINT_LIGHT;
     light1Node->lightColor           = glm::vec3(1.0f, 1.0f, 1.0f);
     light1Node->lightID              = 1;
@@ -177,11 +199,37 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     light2Node->lightColor           = glm::vec3(1.0f, 1.0f, 1.0f);
     light2Node->lightID              = 2;
 
-    light0Node->position = glm::vec3(5.0f, 25.0f, 20.0f);
-    light1Node->position = glm::vec3(-5.0f, 25.0f, 20.0f);
+    //light0Node->position = glm::vec3(5.0f, 25.0f, 20.0f);
+    //light1Node->position = glm::vec3(-5.0f, 25.0f, 20.0f);
 
     glUniform1i(6, NUM_LIGHTS);  // Note: doing this here assumes NUM_LIGHTS is constant
     /* Add point lights */
+
+    /* Add textbox */
+    // Load character map texture
+    PNGImage charMapImage = loadPNGFile("../res/textures/charmap.png");
+
+    // Set up and configure OpenGL texture for character map
+    GLuint charMapTexture = setUpTexture(charMapImage);
+
+    std::string myString = "Hello world!";
+    // Make the textbox mesh
+    Mesh textbox = generateTextGeometryBuffer(myString, 39.0f/29.0f, myString.length()*29);
+
+    // Create VAO for textbox mesh
+    unsigned int textboxVAO = generateBuffer(textbox);
+
+    // Create SceneNode for textbox
+    textboxNode = createSceneNode();
+    rootNode->children.push_back(textboxNode);
+    textboxNode->nodeType = GEOMETRY_2D;
+    textboxNode->textureID = 0;
+
+
+
+    /* Add textbox */
+
+    
 
 
     getTimeDeltaSeconds();

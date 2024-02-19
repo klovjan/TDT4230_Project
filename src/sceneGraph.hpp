@@ -14,7 +14,7 @@
 #include <fstream>
 
 enum SceneNodeType {
-	GEOMETRY, POINT_LIGHT, SPOT_LIGHT
+	GEOMETRY, GEOMETRY_2D, NORMAL_MAP, POINT_LIGHT, SPOT_LIGHT
 };
 
 struct SceneNode {
@@ -52,8 +52,14 @@ struct SceneNode {
 	// Node type is used to determine how to handle the contents of a node
 	SceneNodeType nodeType;
 
-	// Specifically if the SceneNode represents a light source
-	unsigned int lightID;
+	// If the SceneNode represents a texture
+	int textureID = -1;
+
+	// If the SceneNode represents a normal map
+	int normalMapTextureID = -1;
+
+	// If the SceneNode represents a light source
+	int lightID = -1;
 	glm::vec3 lightColor;
 };
 

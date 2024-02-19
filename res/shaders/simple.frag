@@ -76,6 +76,7 @@ void main()
         // Ball shadows
         softShadowFactor = 1.0f;
 
+        noShadow = false;
         if (length(lightDir) < length(ballDir) || dot(lightDir, ballDir) < 0.0f) {
             noShadow = true;
         }
@@ -89,8 +90,6 @@ void main()
             // The light ray is close enough to the ball; make soft shadow
             softShadowFactor = (rejectionLength - ballRadius) / (softShadowBallRadius - ballRadius);
         }
-            
-
 
         // Attenuation
         float lightDistance = length(lightDir);
