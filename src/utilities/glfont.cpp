@@ -7,18 +7,18 @@ Mesh generateTextGeometryBuffer(std::string text, float characterHeightOverWidth
 
     // Hardcoded for now
     // Could be inferred from the texture, but that would require passing it to this function
-    float textureCharacterWidth = 29;
-    float textureCharacterHeight = 39;
+    float texCharacterWidth = 29.0f/3712.0f;
+    float texCharacterHeight = 1.0f;
 
     unsigned int vertexCount = 4 * text.length();
     unsigned int indexCount = 6 * text.length();
-    unsigned int textureCoordCount = 4 * text.length();
+    unsigned int texCoordCount = 4 * text.length();
 
     Mesh mesh;
 
     mesh.vertices.resize(vertexCount);
     mesh.indices.resize(indexCount);
-    mesh.textureCoordinates.resize(textureCoordCount);
+    mesh.textureCoordinates.resize(texCoordCount);
 
     for(unsigned int i = 0; i < text.length(); i++)
     {
@@ -41,12 +41,12 @@ Mesh generateTextGeometryBuffer(std::string text, float characterHeightOverWidth
         mesh.indices.at(6 * i + 5) = 4 * i + 3;
 
 
-        float baseTextureXCoordinate = int(text.at(i)) / 128.0f;
+        float baseTexXCoordinate = int(text.at(i)) / 128.0f;
         
-        mesh.textureCoordinates.at(4 * i + 0) = glm::vec2(baseTextureXCoordinate, 0.0f);
-        mesh.textureCoordinates.at(4 * i + 1) = glm::vec2(baseTextureXCoordinate + textureCharacterWidth, 0.0f);
-        mesh.textureCoordinates.at(4 * i + 2) = glm::vec2(baseTextureXCoordinate + textureCharacterWidth, textureCharacterHeight);
-        mesh.textureCoordinates.at(4 * i + 3) = glm::vec2(baseTextureXCoordinate, textureCharacterHeight);
+        mesh.textureCoordinates.at(4 * i + 0) = glm::vec2(baseTexXCoordinate, 0.0f);
+        mesh.textureCoordinates.at(4 * i + 1) = glm::vec2(baseTexXCoordinate + texCharacterWidth, 0.0f);
+        mesh.textureCoordinates.at(4 * i + 2) = glm::vec2(baseTexXCoordinate + texCharacterWidth, texCharacterHeight);
+        mesh.textureCoordinates.at(4 * i + 3) = glm::vec2(baseTexXCoordinate, texCharacterHeight);
     }
 
     return mesh;

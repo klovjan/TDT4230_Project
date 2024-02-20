@@ -15,6 +15,7 @@ uniform layout(location = 6) int numLights;
 uniform layout(location = 10) vec3 eyePos;
 uniform layout(location = 11) vec3 ballPos;
 uniform layout(location = 12) float ballRadius;
+uniform layout(location = 13) int renderMode;  // 0 -- illuminated 3D, 1 -- textured 2D
 uniform LightSource lightSource[MAX_LIGHTS];
 
 out vec4 color;
@@ -58,8 +59,8 @@ float softShadowFactor = 1.0f;
 // Constants
 const vec3 surfaceColor = vec3(1.0f);
 
-void main()
-{   
+void render3D()
+{
     vec3 normNormal = normalize(normal);  // Normalize interpolated normals
 
     // Vector from fragment to ball -- for ball shadows
@@ -121,4 +122,18 @@ void main()
     color = vec4(emittedColor + ambientColor + diffuseColor*diffuseCoeff + specularColor*specularCoeff + noise, 1.0f);
 
     //color = vec4(normNormal * 0.5f + vec3(0.5f), 1.0f);
+}
+
+void render2D() {
+    color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+}
+
+void main()
+{   
+    if (renderMode == 0) {
+        render3D();
+    }
+    else if (renderMode == 1) {
+        render2D();
+    }
 }

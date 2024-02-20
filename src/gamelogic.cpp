@@ -61,7 +61,8 @@ glm::vec3 ballPosition(0, ballRadius + padDimensions.y, boxDimensions.z / 2);
 glm::vec3 ballDirection(1, 1, 0.2f);
 
 // Moved to global scope to facilitate use in renderNode()
-glm::mat4 VP;
+glm::mat4 perspVP;
+glm::mat4 orthoVP;
 
 CommandLineOptions options;
 
@@ -109,7 +110,7 @@ void mouseCallback(GLFWwindow* window, double x, double y) {
 // LightSource lightSources[/*Put number of light sources you want here*/];
 
 int setUpTexture(PNGImage image) {
-    GLuint textureID = -1;
+    unsigned int textureID = -1;
     
     // Generate and populate texture
     glGenTextures(1, &textureID);
@@ -180,8 +181,6 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     rootNode->children.push_back(light0Node);
     rootNode->children.push_back(light1Node);
-    //padNode->children.push_back(light0Node);
-    //padNode->children.push_back(light1Node);
     padNode->children.push_back(light2Node);  // light2Node moves with the paddle
 
     light0Node->position             = glm::vec3(50.0f, 0.0f, -60.0f);
@@ -205,6 +204,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     glUniform1i(6, NUM_LIGHTS);  // Note: doing this here assumes NUM_LIGHTS is constant
     /* Add point lights */
 
+
     /* Add textbox */
     // Load character map texture
     PNGImage charMapImage = loadPNGFile("../res/textures/charmap.png");
@@ -214,22 +214,23 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     std::string myString = "Hello world!";
     // Make the textbox mesh
-    Mesh textbox = generateTextGeometryBuffer(myString, 39.0f/29.0f, myString.length()*29);
+    Mesh textbox = generateTextGeometryBuffer(myString, 39.0f/29.0f, myString.length()*29.0f);
 
     // Create VAO for textbox mesh
     unsigned int textboxVAO = generateBuffer(textbox);
 
     // Create SceneNode for textbox
     textboxNode = createSceneNode();
+
     rootNode->children.push_back(textboxNode);
-    textboxNode->nodeType = GEOMETRY_2D;
-    textboxNode->textureID = 0;
 
+    textboxNode->vertexArrayObjectID    = textboxVAO;
+    textboxNode->VAOIndexCount          = textbox.indices.size();
 
-
+    textboxNode->position               = glm::vec3(0.0f, 0.0f, -80.0f);
+    textboxNode->nodeType               = GEOMETRY_2D;
+    textboxNode->textureID              = 0;
     /* Add textbox */
-
-    
 
 
     getTimeDeltaSeconds();
@@ -396,7 +397,8 @@ void updateFrame(GLFWwindow* window) {
         }
     }
 
-    glm::mat4 projection = glm::perspective(glm::radians(80.0f), float(windowWidth) / float(windowHeight), 0.1f, 350.f);
+    glm::mat4 perspProjection = glm::perspective(glm::radians(80.0f), float(windowWidth) / float(windowHeight), 0.1f, 350.f);
+    glm::mat4 orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight));
 
     glm::vec3 cameraPosition = glm::vec3(0, 2, -20);
 
@@ -411,7 +413,8 @@ void updateFrame(GLFWwindow* window) {
     glm::vec3 eyePosition = glm::vec3(cameraTransform * glm::vec4(0, 0, 0, 1));
     glUniform3fv(10, 1, glm::value_ptr(eyePosition));
 
-    VP = projection * cameraTransform;
+    perspVP = perspProjection * cameraTransform;
+    orthoVP = orthoProjection * cameraTransform;
 
     // Move and rotate various SceneNodes
     boxNode->position = { 0, -10, -80 };
@@ -469,11 +472,8 @@ void renderNode(SceneNode* node) {
     // Calculate and pass normal matrix
     glm::mat3 normalMatrix = glm::transpose(glm::inverse(node->currentTransformationMatrix));
     glUniformMatrix3fv(4, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-
-    // Calculate MVP matrix
-    glm::mat4 MVP = VP * node->currentTransformationMatrix;
-    // Pass MVP matrix
-    glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(MVP));
+    
+    
 
     // For shadow calculation
     glm::vec3 ballPos = glm::vec3(ballNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1));
@@ -482,7 +482,26 @@ void renderNode(SceneNode* node) {
 
     switch(node->nodeType) {
         case GEOMETRY:
+            glUniform1i(13, 0);
             if(node->vertexArrayObjectID != -1) {
+                // Calculate MVP matrix (perspective)
+                glm::mat4 MVP = perspVP * node->currentTransformationMatrix;
+                // Pass MVP matrix
+                glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(MVP));
+
+                // Draw the model
+                glBindVertexArray(node->vertexArrayObjectID);
+                glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+            };
+        case GEOMETRY_2D:
+            glUniform1i(13, 1);
+            if(node->vertexArrayObjectID != -1) {
+                // Calculate MVP matrix (orthogonal)
+                glm::mat4 MVP = perspVP * node->currentTransformationMatrix;
+                // Pass MVP matrix
+                glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(MVP));
+
+                // Draw the model
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             };
