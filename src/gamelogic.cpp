@@ -39,7 +39,8 @@ SceneNode* boxNode;
 SceneNode* ballNode;
 SceneNode* padNode;
 // 2D geometry nodes
-SceneNode* textboxNode;
+SceneNode* textbox0Node;
+SceneNode* textbox1Node;
 // Light nodes
 SceneNode* light0Node;
 SceneNode* light1Node;
@@ -180,8 +181,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     light1Node = createSceneNode();
     light2Node = createSceneNode();
 
-    rootNode->children.push_back(light0Node);
-    rootNode->children.push_back(light1Node);
+    //rootNode->children.push_back(light0Node);
+    //rootNode->children.push_back(light1Node);
     padNode->children.push_back(light2Node);  // light2Node moves with the paddle
 
     light0Node->position             = glm::vec3(50.0f, 0.0f, -60.0f);
@@ -206,33 +207,49 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     /* Add point lights */
 
 
-    /* Add textbox */
+    /* Add textboxes */
+    // Make the textbox mesh
+    std::string textbox0String = "Left click to start";
+    Mesh textbox0 = generateTextGeometryBuffer(textbox0String, 39.0f/29.0f, textbox0String.length()*29.0f);
+
+    std::string textbox1String = "Right click to pause";
+    Mesh textbox1 = generateTextGeometryBuffer(textbox1String, 39.0f / 29.0f, textbox1String.length() * 29.0f);
+
+    // Create VAO for textbox mesh
+    unsigned int textbox0VAO = generateBuffer(textbox0);
+    unsigned int textbox1VAO = generateBuffer(textbox1);
+
+    // Create SceneNode for textbox
+    textbox0Node = createSceneNode();
+    textbox1Node = createSceneNode();
+
+    rootNode->children.push_back(textbox0Node);
+    textbox0Node->children.push_back(textbox1Node);
+
+    textbox0Node->vertexArrayObjectID    = textbox0VAO;
+    textbox0Node->VAOIndexCount          = textbox0.indices.size();
+
+    textbox1Node->vertexArrayObjectID    = textbox1VAO;
+    textbox1Node->VAOIndexCount          = textbox1.indices.size();
+
+    textbox0Node->position               = glm::vec3(0.0f,
+                                                    windowHeight-39.0f,
+                                                    -1.0f);
+    textbox1Node->position               = glm::vec3(0.0f,
+                                                     -39.0f,
+                                                     0.0f);  // note: textbox1Node is a child of textbox0Node
+
+    textbox0Node->nodeType               = GEOMETRY_2D;
+    textbox1Node->nodeType               = GEOMETRY_2D;
+
     // Load character map texture
     PNGImage charMapImage = loadPNGFile("../res/textures/charmap.png");
 
     // Set up and configure OpenGL texture for character map
-    GLuint charMapTexture = setUpTexture(charMapImage);
+    textbox0Node->textureID = textbox1Node->textureID = setUpTexture(charMapImage);
 
-    // Make the textbox mesh
-    std::string myString = "Hello world!";
-    Mesh textbox = generateTextGeometryBuffer(myString, 39.0f/29.0f, myString.length()*29.0f);
-
-    // Create VAO for textbox mesh
-    unsigned int textboxVAO = generateBuffer(textbox);
-
-    // Create SceneNode for textbox
-    textboxNode = createSceneNode();
-
-    //rootNode->children.push_back(textboxNode);
-
-    textboxNode->vertexArrayObjectID    = textboxVAO;
-    textboxNode->VAOIndexCount          = textbox.indices.size();
-
-    textboxNode->position               = glm::vec3(windowWidth / 2.0f, windowHeight / 2.0f, -20.0f);
-    textboxNode->nodeType               = GEOMETRY_2D;
-    textboxNode->textureID              = 0;
-    /* Add textbox */
-
+    glBindTextureUnit(0, textbox0Node->textureID);
+    /* Add textboxes */
 
     getTimeDeltaSeconds();
 
@@ -496,9 +513,9 @@ void renderNode(SceneNode* node) {
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             };
+            break;
         case GEOMETRY_2D:
             if(node->vertexArrayObjectID != -1) {
-                
                 // Pass renderMode uniform
                 glUniform1i(13, 1);
                 // Calculate MVP matrix (orthogonal)
@@ -508,8 +525,10 @@ void renderNode(SceneNode* node) {
 
                 // Draw the model
                 glBindVertexArray(node->vertexArrayObjectID);
+
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             };
+            break;
         case POINT_LIGHT: break;
         case SPOT_LIGHT: break;
     }
