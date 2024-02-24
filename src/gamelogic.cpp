@@ -167,12 +167,28 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     boxNode->vertexArrayObjectID     = boxVAO;
     boxNode->VAOIndexCount           = box.indices.size();
+    boxNode->nodeType                = NORMAL_MAPPED;
 
     padNode->vertexArrayObjectID     = padVAO;
     padNode->VAOIndexCount           = pad.indices.size();
 
     ballNode->vertexArrayObjectID    = ballVAO;
     ballNode->VAOIndexCount          = sphere.indices.size();
+
+
+    /* Add normal map for walls */
+    // Load textures
+    PNGImage wallDiffuseImage = loadPNGFile("../res/textures/Brick03_col.png");
+    PNGImage wallNormalMapImage = loadPNGFile("../res/textures/Brick03_nrm.png");
+
+    // Set up and configure OpenGL textures for the wall's diffuse and normal maps
+    boxNode->textureID = setUpTexture(wallDiffuseImage);
+    boxNode->normalMapID = setUpTexture(wallNormalMapImage);
+
+    glBindTextureUnit(1, boxNode->textureID);
+    glBindTextureUnit(2, boxNode->normalMapID);
+    /* Add normal map for walls */
+
 
     /* Add point lights */
     NUM_LIGHTS = 3;
@@ -248,8 +264,10 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     // Set up and configure OpenGL texture for character map
     textbox0Node->textureID = textbox1Node->textureID = setUpTexture(charMapImage);
 
-    glBindTextureUnit(0, textbox0Node->textureID);
+    // Bind charmap texture to texture unit 0
+    glBindTextureUnit(3, textbox0Node->textureID);
     /* Add textboxes */
+
 
     getTimeDeltaSeconds();
 
@@ -526,6 +544,21 @@ void renderNode(SceneNode* node) {
                 // Draw the model
                 glBindVertexArray(node->vertexArrayObjectID);
 
+                glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+            };
+            break;
+        case NORMAL_MAPPED:
+            if (node->vertexArrayObjectID != -1) {
+                // Pass renderMode uniform
+                glUniform1i(13, 2);
+                // Pass 
+                // Calculate MVP matrix (perspective)
+                glm::mat4 MVP = perspVP * node->currentTransformationMatrix;
+                // Pass MVP matrix
+                glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(MVP));
+
+                // Draw the model
+                glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             };
             break;

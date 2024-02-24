@@ -14,7 +14,7 @@
 #include <fstream>
 
 enum SceneNodeType {
-	GEOMETRY, GEOMETRY_2D, NORMAL_MAP, POINT_LIGHT, SPOT_LIGHT
+	GEOMETRY, GEOMETRY_2D, NORMAL_MAPPED, POINT_LIGHT, SPOT_LIGHT
 };
 
 struct SceneNode {
@@ -52,11 +52,11 @@ struct SceneNode {
 	// Node type is used to determine how to handle the contents of a node
 	SceneNodeType nodeType;
 
-	// If the SceneNode represents a texture
+	// If the SceneNode has an associated texture
 	int textureID = -1;
 
-	// If the SceneNode represents a normal map
-	int normalMapTextureID = -1;
+	// If the SceneNode has an associated normal map
+	int normalMapID = -1;
 
 	// If the SceneNode represents a light source
 	int lightID = -1;

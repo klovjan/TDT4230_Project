@@ -16,7 +16,9 @@ uniform layout(location = 10) vec3 eyePos;
 uniform layout(location = 11) vec3 ballPos;
 uniform layout(location = 12) float ballRadius;
 uniform layout(location = 13) int renderMode;  // 0 --> 3D, 1 --> 2D
-uniform layout(binding = 0) sampler2D charmapSampler;
+uniform layout(binding = 1) sampler2D wallColorSampler;
+uniform layout(binding = 2) sampler2D wallNormalSampler;
+uniform layout(binding = 3) sampler2D charmapSampler;
 uniform LightSource lightSource[MAX_LIGHTS];
 
 out vec4 color;
@@ -58,7 +60,7 @@ float softShadowBallRadius = ballRadius + 1.5;
 float softShadowFactor = 1.0f;
 
 // Constants
-const vec3 surfaceColor = vec3(1.0f);
+vec3 surfaceColor = vec3(1.0f);
 
 void render3D()
 {
@@ -129,6 +131,12 @@ void render2D() {
     color = texture(charmapSampler, textureCoordinates);
 }
 
+void renderNormalMapped() {
+    surfaceColor = vec3(texture(wallColorSampler, textureCoordinates));
+    
+    render3D();
+}
+
 void main()
 {   
     if (renderMode == 0) {
@@ -136,5 +144,8 @@ void main()
     }
     else if (renderMode == 1) {
         render2D();
+    }
+    else if (renderMode == 2) {
+        renderNormalMapped();
     }
 }
