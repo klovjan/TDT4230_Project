@@ -30,7 +30,6 @@ void main()
         normalize(mat3(modelMatrix) * bitangent_in),
         normalize(mat3(modelMatrix) * normal_in)
     );
-    //TBN = mat3(1.0f);
 
     gl_Position = MVP * vec4(position, 1.0f);
 }

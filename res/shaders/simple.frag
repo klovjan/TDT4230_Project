@@ -26,7 +26,7 @@ uniform layout(location = 12) float ballRadius;
 uniform layout(location = 13) int renderMode;  // 0 --> 3D, 1 --> 2D
 uniform layout(binding = 0) sampler2D colorSampler;
 uniform layout(binding = 1) sampler2D normalMapSampler;
-//uniform layout(binding = 3) sampler2D charmapSampler;
+uniform layout(binding = 2) sampler2D roughnessMapSampler;
 uniform LightSource lightSource[MAX_LIGHTS];
 
 out vec4 color;
@@ -49,7 +49,7 @@ vec3 emittedColor = vec3(0.0f);
 // Phong coefficients
 const float diffuseCoeff = 0.6f;
 const float specularCoeff = 0.5f;
-const int specularFactor = 64;
+float specularFactor = 64.0f;  // Note: NOT const because of potential roughness maps
 
 // Attenuation factor
 float atten = 1.0f;
@@ -67,13 +67,17 @@ bool noShadow = false;
 float softShadowBallRadius = ballRadius + 1.5;
 float softShadowFactor = 1.0f;
 
-// Constants
+// Surface color
 vec3 surfaceColor = vec3(1.0f);
 
 // Fragment normal, which may be different from input (interpolated) normal
 // E.g. If the surface has a normal map
 vec3 fragmentNormal = normal;
 vec3 correctedFragmentNormal = vec3(1.0f);
+
+// Roughness
+float roughness = 64.0f;
+
 
 void render3D()
 {
@@ -149,6 +153,10 @@ void renderNormalMapped() {
     // Assign surface color and normal vector from textures
     surfaceColor = vec3(texture(colorSampler, textureCoordinates));
     fragmentNormal = TBN * (vec3(texture(normalMapSampler, textureCoordinates)) * 2 - 1);  // "* 2 - 1" takes us from [0, 1] to [-1, 1]
+
+    // For roughness
+    roughness = float(texture(roughnessMapSampler, textureCoordinates));
+    specularFactor = 5.0f / pow(roughness, 2);
 
     // Apply 3D lighting
     render3D();

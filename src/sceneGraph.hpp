@@ -58,6 +58,9 @@ struct SceneNode {
 	// If the SceneNode has an associated normal map
 	int normalMapID = -1;
 
+	// If the SceneNode has an associated roughness map
+	int roughnessMapID = -1;
+
 	// If the SceneNode represents a light source
 	int lightID = -1;
 	glm::vec3 lightColor;

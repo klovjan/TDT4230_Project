@@ -180,10 +180,12 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     // Load textures
     PNGImage wallDiffuseImage = loadPNGFile("../res/textures/Brick03_col.png");
     PNGImage wallNormalMapImage = loadPNGFile("../res/textures/Brick03_nrm.png");
+    PNGImage roughnessMapImage = loadPNGFile("../res/textures/Brick03_rgh.png");
 
     // Set up and configure OpenGL textures for the wall's diffuse and normal maps
     boxNode->textureID = setUpTexture(wallDiffuseImage);
     boxNode->normalMapID = setUpTexture(wallNormalMapImage);
+    boxNode->roughnessMapID = setUpTexture(roughnessMapImage);
     /* Add textures for walls */
 
 
@@ -553,6 +555,7 @@ void renderNode(SceneNode* node) {
                 // Bind texture units
                 glBindTextureUnit(0, node->textureID);
                 glBindTextureUnit(1, node->normalMapID);
+                glBindTextureUnit(2, node->roughnessMapID);
                 // Calculate MVP matrix (perspective)
                 glm::mat4 MVP = perspVP * node->currentTransformationMatrix;
                 // Pass MVP matrix
