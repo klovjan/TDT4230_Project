@@ -2,6 +2,13 @@
 
 #define MAX_LIGHTS 10
 
+// Definitions corresponding to SceneNodeType enum
+#define GEOMETRY 0
+#define GEOMETRY_2D 1
+#define NORMAL_MAPPED 2
+#define POINT_LIGHT 3
+#define SPOT_LIGHT 4
+
 struct LightSource {
     vec3 coord;
     vec3 color;
@@ -10,15 +17,16 @@ struct LightSource {
 in layout(location = 0) vec3 normal;
 in layout(location = 1) vec2 textureCoordinates;
 in layout(location = 2) vec3 modelPos;
+in layout(location = 3) mat3 TBN;
 
 uniform layout(location = 6) int numLights;
 uniform layout(location = 10) vec3 eyePos;
 uniform layout(location = 11) vec3 ballPos;
 uniform layout(location = 12) float ballRadius;
 uniform layout(location = 13) int renderMode;  // 0 --> 3D, 1 --> 2D
-uniform layout(binding = 1) sampler2D wallColorSampler;
-uniform layout(binding = 2) sampler2D wallNormalSampler;
-uniform layout(binding = 3) sampler2D charmapSampler;
+uniform layout(binding = 0) sampler2D colorSampler;
+uniform layout(binding = 1) sampler2D normalMapSampler;
+//uniform layout(binding = 3) sampler2D charmapSampler;
 uniform LightSource lightSource[MAX_LIGHTS];
 
 out vec4 color;
@@ -62,9 +70,14 @@ float softShadowFactor = 1.0f;
 // Constants
 vec3 surfaceColor = vec3(1.0f);
 
+// Fragment normal, which may be different from input (interpolated) normal
+// E.g. If the surface has a normal map
+vec3 fragmentNormal = normal;
+vec3 correctedFragmentNormal = vec3(1.0f);
+
 void render3D()
 {
-    vec3 normNormal = normalize(normal);  // Normalize interpolated normals
+    vec3 normNormal = normalize(fragmentNormal);  // Normalize interpolated normals
 
     // Vector from fragment to ball -- for ball shadows
     vec3 ballDir = ballPos - modelPos;
@@ -122,30 +135,34 @@ void render3D()
     // Dithering
     noise = vec3(dither(textureCoordinates));
     
+    // Phong equation
     color = vec4(emittedColor + ambientColor + diffuseColor*diffuseCoeff + specularColor*specularCoeff + noise, 1.0f);
 
     //color = vec4(normNormal * 0.5f + vec3(0.5f), 1.0f);
 }
 
 void render2D() {
-    color = texture(charmapSampler, textureCoordinates);
+    color = texture(colorSampler, textureCoordinates);
 }
 
 void renderNormalMapped() {
-    surfaceColor = vec3(texture(wallColorSampler, textureCoordinates));
-    
+    // Assign surface color and normal vector from textures
+    surfaceColor = vec3(texture(colorSampler, textureCoordinates));
+    fragmentNormal = TBN * (vec3(texture(normalMapSampler, textureCoordinates)) * 2 - 1);  // "* 2 - 1" takes us from [0, 1] to [-1, 1]
+
+    // Apply 3D lighting
     render3D();
 }
 
 void main()
 {   
-    if (renderMode == 0) {
+    if (renderMode == GEOMETRY) {
         render3D();
     }
-    else if (renderMode == 1) {
+    else if (renderMode == GEOMETRY_2D) {
         render2D();
     }
-    else if (renderMode == 2) {
+    else if (renderMode == NORMAL_MAPPED) {
         renderNormalMapped();
     }
 }

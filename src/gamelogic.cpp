@@ -176,7 +176,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     ballNode->VAOIndexCount          = sphere.indices.size();
 
 
-    /* Add normal map for walls */
+    /* Add textures for walls */
     // Load textures
     PNGImage wallDiffuseImage = loadPNGFile("../res/textures/Brick03_col.png");
     PNGImage wallNormalMapImage = loadPNGFile("../res/textures/Brick03_nrm.png");
@@ -184,10 +184,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     // Set up and configure OpenGL textures for the wall's diffuse and normal maps
     boxNode->textureID = setUpTexture(wallDiffuseImage);
     boxNode->normalMapID = setUpTexture(wallNormalMapImage);
-
-    glBindTextureUnit(1, boxNode->textureID);
-    glBindTextureUnit(2, boxNode->normalMapID);
-    /* Add normal map for walls */
+    /* Add textures for walls */
 
 
     /* Add point lights */
@@ -253,7 +250,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
                                                     -1.0f);
     textbox1Node->position               = glm::vec3(0.0f,
                                                      -39.0f,
-                                                     0.0f);  // note: textbox1Node is a child of textbox0Node
+                                                     0.0f);  // Note: textbox1Node is a child of textbox0Node
 
     textbox0Node->nodeType               = GEOMETRY_2D;
     textbox1Node->nodeType               = GEOMETRY_2D;
@@ -264,7 +261,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     // Set up and configure OpenGL texture for character map
     textbox0Node->textureID = textbox1Node->textureID = setUpTexture(charMapImage);
 
-    // Bind charmap texture to texture unit 0
+    // Bind charmap texture to texture unit 3
     glBindTextureUnit(3, textbox0Node->textureID);
     /* Add textboxes */
 
@@ -521,7 +518,7 @@ void renderNode(SceneNode* node) {
         case GEOMETRY:
             if(node->vertexArrayObjectID != -1) {
                 // Pass renderMode uniform
-                glUniform1i(13, 0);
+                glUniform1i(13, GEOMETRY);
                 // Calculate MVP matrix (perspective)
                 glm::mat4 MVP = perspVP * node->currentTransformationMatrix;
                 // Pass MVP matrix
@@ -535,7 +532,9 @@ void renderNode(SceneNode* node) {
         case GEOMETRY_2D:
             if(node->vertexArrayObjectID != -1) {
                 // Pass renderMode uniform
-                glUniform1i(13, 1);
+                glUniform1i(13, GEOMETRY_2D);
+                // Bind texture unit
+                glBindTextureUnit(0, node->textureID);
                 // Calculate MVP matrix (orthogonal)
                 glm::mat4 MVP = orthoVP * node->currentTransformationMatrix;
                 // Pass MVP matrix
@@ -550,8 +549,10 @@ void renderNode(SceneNode* node) {
         case NORMAL_MAPPED:
             if (node->vertexArrayObjectID != -1) {
                 // Pass renderMode uniform
-                glUniform1i(13, 2);
-                // Pass 
+                glUniform1i(13, NORMAL_MAPPED);
+                // Bind texture units
+                glBindTextureUnit(0, node->textureID);
+                glBindTextureUnit(1, node->normalMapID);
                 // Calculate MVP matrix (perspective)
                 glm::mat4 MVP = perspVP * node->currentTransformationMatrix;
                 // Pass MVP matrix

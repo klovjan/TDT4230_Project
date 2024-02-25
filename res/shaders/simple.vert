@@ -3,6 +3,8 @@
 in layout(location = 0) vec3 position;
 in layout(location = 1) vec3 normal_in;
 in layout(location = 2) vec2 textureCoordinates_in;
+in layout(location = 3) vec3 tangent_in;
+in layout(location = 4) vec3 bitangent_in;
 
 uniform layout(location = 3) mat4 modelMatrix;
 uniform layout(location = 4) mat3 normalMatrix;
@@ -11,7 +13,9 @@ uniform layout(location = 13) int renderMode;
 
 out layout(location = 0) vec3 normal_out;
 out layout(location = 1) vec2 textureCoordinates_out;
-out layout(location = 2) vec3 modelPosition;
+out layout(location = 2) vec3 modelPos;
+out layout(location = 3) mat3 TBN;
+out layout(location = 10) vec3 tangent_out;
 
 void main()
 {
@@ -19,7 +23,14 @@ void main()
 
     textureCoordinates_out = textureCoordinates_in;
 
-    modelPosition = vec3(modelMatrix * vec4(position, 1.0f));
+    modelPos = vec3(modelMatrix * vec4(position, 1.0f));
+    
+    TBN = mat3(
+        normalize(mat3(modelMatrix) * tangent_in),
+        normalize(mat3(modelMatrix) * bitangent_in),
+        normalize(mat3(modelMatrix) * normal_in)
+    );
+    //TBN = mat3(1.0f);
 
     gl_Position = MVP * vec4(position, 1.0f);
 }
