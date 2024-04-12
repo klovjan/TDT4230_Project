@@ -15,6 +15,7 @@
 #include "sceneGraph.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/transform.hpp>
+#include "utilities/camera.hpp"
 
 #include "utilities/imageLoader.hpp"
 #include "utilities/glfont.h"
@@ -41,6 +42,7 @@ double ballRadius = 3.0f;
 
 // These are heap allocated, because they should not be initialised at the start of the program
 Gloom::Shader* shader;
+Gloom::Camera* camera;
 
 const glm::vec3 boxDimensions(180, 90, 90);
 const glm::vec3 padDimensions(30, 3, 40);
@@ -205,6 +207,13 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     std::cout << "Ready. Click to start!" << std::endl;
 }
 
+// void updateCamera() {
+//     camera->handleMouseButtonInputs();
+//     camera->handleCursorPosInput();
+//     camera->updateCamera(getTimeDeltaSeconds());
+//     return;
+// }
+
 void updateFrame(GLFWwindow* window) {
     // Pass number of lights to shader (???)
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -250,6 +259,12 @@ void updateFrame(GLFWwindow* window) {
                     glm::rotate(0.3f + 0.2f * float(-padPositionZ*padPositionZ), glm::vec3(1, 0, 0)) *
                     glm::rotate(lookRotation, glm::vec3(0, 1, 0)) *
                     glm::translate(-cameraPosition);
+
+    // camera = new Gloom::Camera(glm::vec3(0, 2, -20));
+    // camera->handleMouseButtonInputs();
+    // camera->handleCursorPosInput();
+    // camera->updateCamera(getTimeDeltaSeconds());
+    // glm::mat4 cameraTransform = camera->getViewMatrix();
 
     // Pass camera position to fragment shader, for specular lighting
     glm::vec3 eyePosition = glm::vec3(cameraTransform * glm::vec4(0, 0, 0, 1));
