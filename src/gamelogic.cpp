@@ -113,11 +113,26 @@ int setUpTexture(PNGImage image) {
     return textureID;
 }
 
+// Static wrapper function (non-member function)
+static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
+{
+    // Retrieve the camera instance from user data (set later)
+    Gloom::Camera* camera = static_cast<Gloom::Camera*>(glfwGetWindowUserPointer(window));
+    if (camera)
+    {
+        camera->handleCursorPosInput(xpos, ypos);
+    }
+
+    mouseCallback(window, xpos, ypos);
+}
+
 void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     options = gameOptions;
 
+    camera = new Gloom::Camera(glm::vec3(0, 2, -20));
+
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-    glfwSetCursorPosCallback(window, mouseCallback);
+    glfwSetCursorPosCallback(window, cursorPosCallback);
 
     shader = new Gloom::Shader();
     shader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
@@ -207,15 +222,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     std::cout << "Ready. Click to start!" << std::endl;
 }
 
-// void updateCamera() {
-//     camera->handleMouseButtonInputs();
-//     camera->handleCursorPosInput();
-//     camera->updateCamera(getTimeDeltaSeconds());
-//     return;
-// }
-
 void updateFrame(GLFWwindow* window) {
-    // Pass number of lights to shader (???)
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // double timeDelta = getTimeDeltaSeconds();
@@ -260,7 +267,6 @@ void updateFrame(GLFWwindow* window) {
                     glm::rotate(lookRotation, glm::vec3(0, 1, 0)) *
                     glm::translate(-cameraPosition);
 
-    // camera = new Gloom::Camera(glm::vec3(0, 2, -20));
     // camera->handleMouseButtonInputs();
     // camera->handleCursorPosInput();
     // camera->updateCamera(getTimeDeltaSeconds());
