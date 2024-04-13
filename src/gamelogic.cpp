@@ -20,14 +20,10 @@
 #include "utilities/imageLoader.hpp"
 #include "utilities/glfont.h"
 
-double padPositionX = 0;
-double padPositionZ = 0;
-
 // 3D geometry nodes
 SceneNode* rootNode;
 SceneNode* boxNode;
 SceneNode* ballNode;
-SceneNode* padNode;
 // 2D geometry nodes
 SceneNode* textbox0Node;
 SceneNode* textbox1Node;
@@ -45,9 +41,8 @@ Gloom::Shader* shader;
 Gloom::Camera* camera;
 
 const glm::vec3 boxDimensions(180, 90, 90);
-const glm::vec3 padDimensions(30, 3, 40);
 
-glm::vec3 ballPosition(0, ballRadius + padDimensions.y, boxDimensions.z / 2);
+glm::vec3 ballPosition(0.0f, 0.0f, 0.0f);
 glm::vec3 ballDirection(1, 1, 0.2f);
 
 // Moved to global scope to facilitate use in renderNode()
@@ -65,28 +60,6 @@ bool mouseRightReleased = false;
 const float debug_startTime = 0;
 double totalElapsedTime = debug_startTime;
 double gameElapsedTime = debug_startTime;
-
-double mouseSensitivity = 1.0;
-double lastMouseX = windowWidth / 2;
-double lastMouseY = windowHeight / 2;
-void mouseCallback(GLFWwindow* window, double x, double y) {
-    int windowWidth, windowHeight;
-    glfwGetWindowSize(window, &windowWidth, &windowHeight);
-    glViewport(0, 0, windowWidth, windowHeight);
-
-    double deltaX = x - lastMouseX;
-    double deltaY = y - lastMouseY;
-
-    padPositionX -= mouseSensitivity * deltaX / windowWidth;
-    padPositionZ -= mouseSensitivity * deltaY / windowHeight;
-
-    if (padPositionX > 1) padPositionX = 1;
-    if (padPositionX < 0) padPositionX = 0;
-    if (padPositionZ > 1) padPositionZ = 1;
-    if (padPositionZ < 0) padPositionZ = 0;
-
-    glfwSetCursorPos(window, windowWidth / 2, windowHeight / 2);
-}
 
 //// A few lines to help you if you've never used c++ structs
 // struct LightSource {
@@ -113,25 +86,52 @@ int setUpTexture(PNGImage image) {
     return textureID;
 }
 
-// Static wrapper function (non-member function)
-static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
-{
-    // Retrieve the camera instance from user data (set later)
+// Static wrapper function to allow passing it as an argument
+static void keyboardInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    // Retrieve the camera instance
+    Gloom::Camera* camera = static_cast<Gloom::Camera*>(glfwGetWindowUserPointer(window));
+    if (camera)
+    {
+        camera->handleKeyboardInputs(key, action);
+    }
+}
+
+// Static wrapper function to allow passing it as an argument
+static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+    // Retrieve the camera instance
+    Gloom::Camera* camera = static_cast<Gloom::Camera*>(glfwGetWindowUserPointer(window));
+    if (camera)
+    {
+        camera->handleMouseButtonInputs(button, action);
+    }
+}
+
+// Static wrapper function to allow passing it as an argument
+static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
+    // Retrieve the camera instance
     Gloom::Camera* camera = static_cast<Gloom::Camera*>(glfwGetWindowUserPointer(window));
     if (camera)
     {
         camera->handleCursorPosInput(xpos, ypos);
     }
 
-    mouseCallback(window, xpos, ypos);
+    glfwSetCursorPos(window, windowWidth / 2, windowHeight / 2);
 }
 
 void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     options = gameOptions;
 
-    camera = new Gloom::Camera(glm::vec3(0, 2, -20));
+    // Initialise camera object
+    camera = new Gloom::Camera(glm::vec3(0, 2, -20), 15.0f);
+    glfwSetWindowUserPointer(window, camera);
+
+    // Set up keyboard and mouse callbacks for camera operation
+    glfwSetKeyCallback(window, keyboardInputCallback);
+
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    glfwSetCursorPos(window, windowWidth / 2, windowHeight / 2);
     glfwSetCursorPosCallback(window, cursorPosCallback);
 
     shader = new Gloom::Shader();
@@ -139,31 +139,24 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     shader->activate();
 
     // Create meshes
-    Mesh pad = cube(padDimensions, glm::vec2(30, 40), true);
     Mesh box = cube(boxDimensions, glm::vec2(90), true, true);
     Mesh sphere = generateSphere(1.0, 40, 40);
 
     // Fill buffers
     unsigned int ballVAO = generateBuffer(sphere);
     unsigned int boxVAO  = generateBuffer(box);
-    unsigned int padVAO  = generateBuffer(pad);
 
     // Construct scene
     rootNode = createSceneNode();
     boxNode  = createSceneNode();
-    padNode  = createSceneNode();
     ballNode = createSceneNode();
     
     rootNode->children.push_back(boxNode);
-    rootNode->children.push_back(padNode);
     rootNode->children.push_back(ballNode);
 
     boxNode->vertexArrayObjectID     = boxVAO;
     boxNode->VAOIndexCount           = box.indices.size();
     boxNode->nodeType                = NORMAL_MAPPED;
-
-    padNode->vertexArrayObjectID     = padVAO;
-    padNode->VAOIndexCount           = pad.indices.size();
 
     ballNode->vertexArrayObjectID    = ballVAO;
     ballNode->VAOIndexCount          = sphere.indices.size();
@@ -191,7 +184,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     rootNode->children.push_back(light0Node);
     rootNode->children.push_back(light1Node);
-    padNode->children.push_back(light2Node);  // light2Node moves with the paddle
+    rootNode->children.push_back(light2Node);  // TODO: light2Node moves with the camera
 
     light0Node->position             = glm::vec3(50.0f, 0.0f, -60.0f);
     light0Node->nodeType             = POINT_LIGHT;
@@ -227,7 +220,7 @@ void updateFrame(GLFWwindow* window) {
 
     // double timeDelta = getTimeDeltaSeconds();
 
-    const float ballBottomY = boxNode->position.y - (boxDimensions.y/2) + ballRadius + padDimensions.y;
+    const float ballBottomY = boxNode->position.y - (boxDimensions.y/2) + ballRadius;
 
     const float cameraWallOffset = 30; // Arbitrary addition to prevent ball from going too much into camera
 
@@ -251,9 +244,9 @@ void updateFrame(GLFWwindow* window) {
         mouseRightPressed = false;
     }
 
-    ballPosition.x = ballMinX + (1 - padPositionX) * (ballMaxX - ballMinX);
-    ballPosition.y = ballBottomY;
-    ballPosition.z = ballMinZ + (1 - padPositionZ) * ((ballMaxZ+cameraWallOffset) - ballMinZ);
+    ballPosition.x = 0.0f;
+    ballPosition.y = 0.0f;
+    ballPosition.z = 0.0f;
 
     glm::mat4 perspProjection = glm::perspective(glm::radians(80.0f), float(windowWidth) / float(windowHeight), 0.1f, 350.f);
     glm::mat4 orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight), 0.1f, 350.f);
@@ -261,16 +254,9 @@ void updateFrame(GLFWwindow* window) {
     glm::vec3 cameraPosition = glm::vec3(0, 2, -20);
 
     // Some math to make the camera move in a nice way
-    float lookRotation = -0.6 / (1 + exp(-5 * (padPositionX-0.5))) + 0.3;
-    glm::mat4 cameraTransform =
-                    glm::rotate(0.3f + 0.2f * float(-padPositionZ*padPositionZ), glm::vec3(1, 0, 0)) *
-                    glm::rotate(lookRotation, glm::vec3(0, 1, 0)) *
-                    glm::translate(-cameraPosition);
-
-    // camera->handleMouseButtonInputs();
-    // camera->handleCursorPosInput();
-    // camera->updateCamera(getTimeDeltaSeconds());
-    // glm::mat4 cameraTransform = camera->getViewMatrix();
+    
+    camera->updateCamera(getTimeDeltaSeconds());
+    glm::mat4 cameraTransform = camera->getViewMatrix();
 
     // Pass camera position to fragment shader, for specular lighting
     glm::vec3 eyePosition = glm::vec3(cameraTransform * glm::vec4(0, 0, 0, 1));
@@ -285,12 +271,6 @@ void updateFrame(GLFWwindow* window) {
     ballNode->position = ballPosition;
     ballNode->scale = glm::vec3(ballRadius);
     ballNode->rotation = { 0, totalElapsedTime*2, 0 };
-
-    padNode->position  = {
-        boxNode->position.x - (boxDimensions.x/2) + (padDimensions.x/2) + (1 - padPositionX) * (boxDimensions.x - padDimensions.x),
-        boxNode->position.y - (boxDimensions.y/2) + (padDimensions.y/2),
-        boxNode->position.z - (boxDimensions.z/2) + (padDimensions.z/2) + (1 - padPositionZ) * (boxDimensions.z - padDimensions.z)
-    };
 
     updateNodeTransformations(rootNode, glm::mat4(1.0f));
 }

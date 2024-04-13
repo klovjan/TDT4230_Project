@@ -8,6 +8,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <GLFW/glfw3.h>
+#include "window.hpp"
 
 
 namespace Gloom
@@ -20,7 +21,7 @@ namespace Gloom
                GLfloat   mouseSensitivity = 0.005f)
         {
             cPosition         = position;
-            cMovementSpeed    = movementSpeed;
+            defMovementSpeed  = movementSpeed;
             cMouseSensitivity = mouseSensitivity;
 
             // Set up the initial view matrix
@@ -48,6 +49,8 @@ namespace Gloom
                     keysInUse[key] = false;
                 }
             }
+
+            printf("You did action: %d to button: %d\n", action, key);
         }
 
 
@@ -65,6 +68,8 @@ namespace Gloom
                 isMousePressed = false;
                 resetMouse = true;
             }
+
+            printf("You did action: %d to button: %d\n", action, button);
         }
 
 
@@ -72,8 +77,8 @@ namespace Gloom
         void handleCursorPosInput(double xpos, double ypos)
         {
             // Do nothing if the left mouse button is not pressed
-            if (isMousePressed == false)
-                return;
+            // if (isMousePressed == false)
+            //     return;
 
             // There should be no movement when the mouse button is released
             if (resetMouse)
@@ -84,12 +89,14 @@ namespace Gloom
             }
 
             // Keep track of pitch and yaw for the current frame
-            fYaw   = xpos - lastXPos;
-            fPitch = ypos - lastYPos;
+            fYaw   = xpos - windowWidth / 2;
+            fPitch = ypos - windowHeight / 2;
 
             // Update last known cursor position
             lastXPos = xpos;
             lastYPos = ypos;
+
+            printf("xpos: %f, ypos: %f\n", xpos, ypos);
         }
 
 
@@ -105,6 +112,11 @@ namespace Gloom
             // Alter position in the appropriate direction
             glm::vec3 fMovement(0.0f, 0.0f, 0.0f);
 
+            cMovementSpeed = defMovementSpeed;
+
+            if (keysInUse[GLFW_KEY_LEFT_SHIFT])
+                cMovementSpeed = 50.0f;
+
             if (keysInUse[GLFW_KEY_W])  // forward
                 fMovement -= dirZ;
 
@@ -117,10 +129,10 @@ namespace Gloom
             if (keysInUse[GLFW_KEY_D])  // right
                 fMovement += dirX;
 
-            if (keysInUse[GLFW_KEY_E])  // vertical up
+            if (keysInUse[GLFW_KEY_SPACE])  // vertical up
                 fMovement += dirY;
 
-            if (keysInUse[GLFW_KEY_Q])  // vertical down
+            if (keysInUse[GLFW_KEY_LEFT_CONTROL])  // vertical down
                 fMovement -= dirY;
 
             // Trick to balance PC speed with movement
@@ -167,6 +179,10 @@ namespace Gloom
 
             // Update view matrix
             matView = matRotation * matTranslate;
+
+            // Update last pitch and yaw
+            lastQPitch = qPitch;
+            lastQYaw = qYaw;
         }
 
         // Private member variables
@@ -188,9 +204,14 @@ namespace Gloom
         GLfloat lastXPos = 0.0f;
         GLfloat lastYPos = 0.0f;
 
+        // Last pitch and yaw
+        glm::quat lastQPitch;
+        glm::quat lastQYaw;
+
         // Camera settings
         GLfloat cMovementSpeed;
         GLfloat cMouseSensitivity;
+        GLfloat defMovementSpeed;
 
         // View matrix
         glm::mat4 matView;
