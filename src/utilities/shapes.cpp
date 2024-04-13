@@ -90,7 +90,7 @@ Mesh cube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bool inv
     return m;
 }
 
-Mesh generateSphere(float sphereRadius, int slices, int layers) {
+Mesh generateSphere(float sphereRadius, int slices, int layers, bool inverted) {
     const unsigned int triangleCount = slices * layers * 2;
 
     std::vector<glm::vec3> vertices;

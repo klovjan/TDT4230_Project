@@ -27,6 +27,8 @@ SceneNode* ballNode;
 // 2D geometry nodes
 SceneNode* textbox0Node;
 SceneNode* textbox1Node;
+// BH nodes
+SceneNode* bhNode;
 // Light nodes
 SceneNode* light0Node;
 SceneNode* light1Node;
@@ -43,7 +45,6 @@ Gloom::Camera* camera;
 const glm::vec3 boxDimensions(180, 90, 90);
 
 glm::vec3 ballPosition(0.0f, 0.0f, 0.0f);
-glm::vec3 ballDirection(1, 1, 0.2f);
 
 // Moved to global scope to facilitate use in renderNode()
 glm::mat4 perspVP;
@@ -140,11 +141,11 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     // Create meshes
     Mesh box = cube(boxDimensions, glm::vec2(90), true, true);
-    Mesh sphere = generateSphere(1.0, 40, 40);
+    Mesh sphere = generateSphere(1.0, 40, 40, false);
 
     // Fill buffers
-    unsigned int ballVAO = generateBuffer(sphere);
     unsigned int boxVAO  = generateBuffer(box);
+    unsigned int ballVAO = generateBuffer(sphere);
 
     // Construct scene
     rootNode = createSceneNode();
@@ -173,6 +174,20 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     boxNode->normalMapID = setUpTexture(wallNormalMapImage);
     boxNode->roughnessMapID = setUpTexture(roughnessMapImage);
     /* Add textures for walls */
+
+    /* Add BH */
+    Mesh bhSphere = generateSphere(2.0f, 40, 40, true);
+
+    unsigned int bhVAO = generateBuffer(bhSphere);
+
+    bhNode = createSceneNode();
+
+    rootNode->children.push_back(bhNode);
+
+    bhNode->vertexArrayObjectID    = bhVAO;
+    bhNode->VAOIndexCount          = bhSphere.indices.size();
+    bhNode->nodeType               = BLACK_HOLE;
+    /* Add BH */
 
 
     /* Add point lights */
@@ -244,9 +259,9 @@ void updateFrame(GLFWwindow* window) {
         mouseRightPressed = false;
     }
 
-    ballPosition.x = 0.0f;
-    ballPosition.y = 0.0f;
-    ballPosition.z = 0.0f;
+    ballPosition.x = boxNode->position.x;
+    ballPosition.y = boxNode->position.y;
+    ballPosition.z = boxNode->position.z;
 
     glm::mat4 perspProjection = glm::perspective(glm::radians(80.0f), float(windowWidth) / float(windowHeight), 0.1f, 350.f);
     glm::mat4 orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight), 0.1f, 350.f);
@@ -318,8 +333,6 @@ void renderNode(SceneNode* node) {
     glm::mat3 normalMatrix = glm::transpose(glm::inverse(node->currentTransformationMatrix));
     glUniformMatrix3fv(4, 1, GL_FALSE, glm::value_ptr(normalMatrix));
     
-    
-
     // For shadow calculation
     glm::vec3 ballPos = glm::vec3(ballNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1));
     glUniform3fv(11, 1, glm::value_ptr(ballPos));
@@ -375,6 +388,20 @@ void renderNode(SceneNode* node) {
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             };
             break;
+        case BLACK_HOLE:
+            if (node->vertexArrayObjectID != -1) {
+                // Pass renderMode uniform
+                glUniform1i(13, NORMAL_MAPPED);
+                // Calculate MVP matrix (perspective)
+                glm::mat4 MVP = perspVP * node->currentTransformationMatrix;
+                // Pass MVP matrix
+                glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(MVP));
+
+                // Draw the model
+                glBindVertexArray(node->vertexArrayObjectID);
+                glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+            };
+            break;
         case POINT_LIGHT: break;
         case SPOT_LIGHT: break;
     }
@@ -384,10 +411,14 @@ void renderNode(SceneNode* node) {
     }
 }
 
-void renderFrame(GLFWwindow* window) {
+void renderToGBuffer(GLFWwindow* window) {
     int windowWidth, windowHeight;
     glfwGetWindowSize(window, &windowWidth, &windowHeight);
     glViewport(0, 0, windowWidth, windowHeight);
 
     renderNode(rootNode);
+}
+
+void renderToScreen(GLFWwindow* window) {
+    return;
 }

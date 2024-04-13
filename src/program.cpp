@@ -42,10 +42,19 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
 	    // Clear colour and depth buffers
 	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        unsigned int gBuffer = initGBuffer();
 
         updateFrame(window);
-        renderFrame(window);
 
+        // Bind the framebuffer to gBuffer
+        //glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+        // First render pass
+        renderToGBuffer(window);
+
+        // // Bind the framebuffer to screen
+        // glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // // Deferred render pass
+        // renderToScreen(window);
 
         // Handle other events
         glfwPollEvents();

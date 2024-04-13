@@ -61,6 +61,9 @@ struct SceneNode {
 	// If the SceneNode has an associated roughness map
 	int roughnessMapID = -1;
 
+	// If the SceneNode contains a black hole
+	float innerRadius = 0.3f;  // The percentage of the radius of the sphere that is completely black
+
 	// If the SceneNode represents a light source
 	int lightID = -1;
 	glm::vec3 lightColor;

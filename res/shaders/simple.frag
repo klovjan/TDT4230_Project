@@ -6,8 +6,9 @@
 #define GEOMETRY 0
 #define GEOMETRY_2D 1
 #define NORMAL_MAPPED 2
-#define POINT_LIGHT 3
-#define SPOT_LIGHT 4
+#define BLACK_HOLE 3
+#define POINT_LIGHT 4
+#define SPOT_LIGHT 5
 
 struct LightSource {
     vec3 coord;
@@ -23,13 +24,14 @@ uniform layout(location = 6) int numLights;
 uniform layout(location = 10) vec3 eyePos;
 uniform layout(location = 11) vec3 ballPos;
 uniform layout(location = 12) float ballRadius;
-uniform layout(location = 13) int renderMode;  // 0 --> 3D, 1 --> 2D
+uniform layout(location = 13) int renderMode;  // SceneNodeType enum values (defined above)
 uniform layout(binding = 0) sampler2D colorSampler;
 uniform layout(binding = 1) sampler2D normalMapSampler;
 uniform layout(binding = 2) sampler2D roughnessMapSampler;
 uniform LightSource lightSource[MAX_LIGHTS];
 
 out vec4 color;
+out layout(location = 0) vec4 gColor;
 
 float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453); }
 float dither(vec2 uv) { return (rand(uv)*2.0-1.0) / 256.0; }
@@ -173,4 +175,6 @@ void main()
     else if (renderMode == NORMAL_MAPPED) {
         renderNormalMapped();
     }
+
+    gColor = color;
 }
