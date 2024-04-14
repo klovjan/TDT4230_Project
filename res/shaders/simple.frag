@@ -175,6 +175,9 @@ void main()
     else if (renderMode == NORMAL_MAPPED) {
         renderNormalMapped();
     }
+    else {
+        render3D();
+    }
 
     gColor = color;
 }

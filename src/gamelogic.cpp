@@ -33,13 +33,19 @@ SceneNode* bhNode;
 SceneNode* light0Node;
 SceneNode* light1Node;
 SceneNode* light2Node;
+// Screen-filling quad node
+SceneNode* screenQuadNode;
+
+unsigned int gBuffer;
 
 unsigned int NUM_LIGHTS;
 
 double ballRadius = 3.0f;
 
 // These are heap allocated, because they should not be initialised at the start of the program
-Gloom::Shader* shader;
+Gloom::Shader* gBufferShader;
+Gloom::Shader* bhShader;
+Gloom::Shader* deferredShader;
 Gloom::Camera* camera;
 
 const glm::vec3 boxDimensions(180, 90, 90);
@@ -90,7 +96,7 @@ int setUpTexture(PNGImage image) {
 // Static wrapper function to allow passing it as an argument
 static void keyboardInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     // Retrieve the camera instance
-    Gloom::Camera* camera = static_cast<Gloom::Camera*>(glfwGetWindowUserPointer(window));
+    //Gloom::Camera* camera = static_cast<Gloom::Camera*>(glfwGetWindowUserPointer(window));
     if (camera)
     {
         camera->handleKeyboardInputs(key, action);
@@ -100,7 +106,7 @@ static void keyboardInputCallback(GLFWwindow* window, int key, int scancode, int
 // Static wrapper function to allow passing it as an argument
 static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
     // Retrieve the camera instance
-    Gloom::Camera* camera = static_cast<Gloom::Camera*>(glfwGetWindowUserPointer(window));
+    //Gloom::Camera* camera = static_cast<Gloom::Camera*>(glfwGetWindowUserPointer(window));
     if (camera)
     {
         camera->handleMouseButtonInputs(button, action);
@@ -110,7 +116,7 @@ static void mouseButtonCallback(GLFWwindow* window, int button, int action, int 
 // Static wrapper function to allow passing it as an argument
 static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
     // Retrieve the camera instance
-    Gloom::Camera* camera = static_cast<Gloom::Camera*>(glfwGetWindowUserPointer(window));
+    //Gloom::Camera* camera = static_cast<Gloom::Camera*>(glfwGetWindowUserPointer(window));
     if (camera)
     {
         camera->handleCursorPosInput(xpos, ypos);
@@ -123,7 +129,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     options = gameOptions;
 
     // Initialise camera object
-    camera = new Gloom::Camera(glm::vec3(0, 2, -20), 15.0f);
+    camera = new Gloom::Camera(glm::vec3(0, 2, -20), 15.0f, 0.005f);
     glfwSetWindowUserPointer(window, camera);
 
     // Set up keyboard and mouse callbacks for camera operation
@@ -135,9 +141,14 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     glfwSetCursorPos(window, windowWidth / 2, windowHeight / 2);
     glfwSetCursorPosCallback(window, cursorPosCallback);
 
-    shader = new Gloom::Shader();
-    shader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
-    shader->activate();
+    gBufferShader = new Gloom::Shader();
+    gBufferShader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
+
+    bhShader = new Gloom::Shader();
+    bhShader->makeBasicShader("../res/shaders/bhSimple.vert", "../res/shaders/deferred.frag");
+
+    deferredShader = new Gloom::Shader();
+    deferredShader->makeBasicShader("../res/shaders/deferred.vert", "../res/shaders/deferred.frag");
 
     // Create meshes
     Mesh box = cube(boxDimensions, glm::vec2(90), true, true);
@@ -189,6 +200,20 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     bhNode->nodeType               = BLACK_HOLE;
     /* Add BH */
 
+    /* Add screen-filling quad */
+    Mesh screenQuad = generateQuad();
+
+    unsigned int quadVAO = generateBuffer(screenQuad);
+
+    screenQuadNode = createSceneNode();
+
+    //rootNode->children.push_back(quadNode);
+
+    screenQuadNode->vertexArrayObjectID = quadVAO;
+    screenQuadNode->VAOIndexCount = screenQuad.indices.size();
+    screenQuadNode->nodeType = GEOMETRY_2D;
+    /* Add screen-filling quad */
+
 
     /* Add point lights */
     NUM_LIGHTS = 3;
@@ -227,7 +252,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     std::cout << fmt::format("Initialized scene with {} SceneNodes.", totalChildren(rootNode)) << std::endl;
 
-    std::cout << "Ready. Click to start!" << std::endl;
+    gBuffer = initGBuffer();
 }
 
 void updateFrame(GLFWwindow* window) {
@@ -291,6 +316,8 @@ void updateFrame(GLFWwindow* window) {
 }
 
 void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar) {
+    gBufferShader->activate();
+
     glm::mat4 transformationMatrix =
               glm::translate(node->position)
             * glm::translate(node->referencePoint)
@@ -309,8 +336,8 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
         case POINT_LIGHT: {
             glm::vec4 lightCoord = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
 
-            GLint coordLocation = shader->getUniformFromName(fmt::format("lightSource[{}].coord", node->lightID));
-            GLint colorLocation = shader->getUniformFromName(fmt::format("lightSource[{}].color", node->lightID));
+            GLint coordLocation = gBufferShader->getUniformFromName(fmt::format("lightSource[{}].coord", node->lightID));
+            GLint colorLocation = gBufferShader->getUniformFromName(fmt::format("lightSource[{}].color", node->lightID));
 
             glUniform3fv(coordLocation, 1, glm::value_ptr(lightCoord));
             glUniform3fv(colorLocation, 1, glm::value_ptr(node->lightColor));
@@ -319,6 +346,8 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
         }
         case SPOT_LIGHT: break;
     }
+
+    gBufferShader->deactivate();
 
     for(SceneNode* child : node->children) {
         updateNodeTransformations(child, node->currentTransformationMatrix);
@@ -390,8 +419,10 @@ void renderNode(SceneNode* node) {
             break;
         case BLACK_HOLE:
             if (node->vertexArrayObjectID != -1) {
+                bhShader->activate();  // TODO: Fix all of this
+
                 // Pass renderMode uniform
-                glUniform1i(13, NORMAL_MAPPED);
+                glUniform1i(13, BLACK_HOLE);
                 // Calculate MVP matrix (perspective)
                 glm::mat4 MVP = perspVP * node->currentTransformationMatrix;
                 // Pass MVP matrix
@@ -400,6 +431,14 @@ void renderNode(SceneNode* node) {
                 // Draw the model
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+
+                glEnable(GL_STENCIL_TEST);
+                glStencilFunc(GL_ALWAYS, 1, 0xFF); // Set stencil buffer to 1 wherever the black hole is rendered
+                glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+                glStencilMask(0xFF);
+                glClear(GL_STENCIL_BUFFER_BIT);  // Clear previous stencil data
+
+                bhShader->deactivate();
             };
             break;
         case POINT_LIGHT: break;
@@ -412,13 +451,35 @@ void renderNode(SceneNode* node) {
 }
 
 void renderToGBuffer(GLFWwindow* window) {
+    gBufferShader->activate();
+
+    // Bind the framebuffer to gBuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);  // TODO
+
+    renderNode(rootNode);
+
+    gBufferShader->deactivate();
+}
+
+void renderToScreen(GLFWwindow* window) {
+    deferredShader->activate();
+
+    // Bind the framebuffer to screen
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    deferredShader->deactivate();
+
+    renderNode(screenQuadNode);
+}
+
+void renderFrame(GLFWwindow* window) {
     int windowWidth, windowHeight;
     glfwGetWindowSize(window, &windowWidth, &windowHeight);
     glViewport(0, 0, windowWidth, windowHeight);
 
-    renderNode(rootNode);
-}
+    // First render pass
+    renderToGBuffer(window);
 
-void renderToScreen(GLFWwindow* window) {
-    return;
+    // Deferred render pass
+    //renderToScreen(window);
 }

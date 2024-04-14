@@ -205,3 +205,39 @@ Mesh generateSphere(float sphereRadius, int slices, int layers, bool inverted) {
     mesh.textureCoordinates = uvs;
     return mesh;
 }
+
+Mesh generateQuad() {
+    std::vector<glm::vec3> vertices;
+    std::vector<glm::vec3> normals;
+    std::vector<unsigned int> indices;
+    std::vector<glm::vec2> uvs;
+
+    vertices.emplace_back(-1.0f, 1.0f, 0.0f);
+    vertices.emplace_back(-1.0f, -1.0f, 0.0f);
+    vertices.emplace_back(1.0f, -1.0f, 0.0f);
+
+    vertices.emplace_back(-1.0f, 1.0f, 0.0f);
+    vertices.emplace_back(1.0f, -1.0f, 0.0f);
+    vertices.emplace_back(1.0f, 1.0f, 0.0f);
+
+    uvs.emplace_back(0.0f, 1.0f);
+    uvs.emplace_back(0.0f, 0.0f);
+    uvs.emplace_back(1.0f, 0.0f);
+
+    uvs.emplace_back(0.0f, 1.0f);
+    uvs.emplace_back(1.0f, 0.0f);
+    uvs.emplace_back(1.0f, 1.0f);
+
+    for (unsigned int i = 0; i < 6; i++)
+    {
+        normals.emplace_back(0.0f, 0.0f, 1.0f);
+        indices.push_back(i);
+    }
+
+    Mesh mesh;
+    mesh.vertices = vertices;
+    mesh.normals = normals;
+    mesh.indices = indices;
+    mesh.textureCoordinates = uvs;
+    return mesh;
+}

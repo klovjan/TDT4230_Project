@@ -50,7 +50,7 @@ namespace Gloom
                 }
             }
 
-            printf("You did action: %d to button: %d\n", action, key);
+            //printf("You did action: %d to button: %d\n", action, key);
         }
 
 
@@ -69,7 +69,7 @@ namespace Gloom
                 resetMouse = true;
             }
 
-            printf("You did action: %d to button: %d\n", action, button);
+            //printf("You did action: %d to button: %d\n", action, button);
         }
 
 
@@ -96,7 +96,7 @@ namespace Gloom
             lastXPos = xpos;
             lastYPos = ypos;
 
-            printf("xpos: %f, ypos: %f\n", xpos, ypos);
+            //printf("xpos: %f, ypos: %f\n", xpos, ypos);
         }
 
 
