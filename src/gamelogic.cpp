@@ -400,25 +400,7 @@ void renderNode(SceneNode* node) {
             };
             break;
         case BLACK_HOLE:
-            if (node->vertexArrayObjectID != -1) {
-                bhShader->activate();  // TODO: Fix all of this
-
-                // Calculate MVP matrix (perspective)
-                glm::mat4 MVP = perspVP * node->currentTransformationMatrix;
-                // Pass MVP matrix
-                //glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(MVP));
-
-                glStencilFunc(GL_ALWAYS, 1, 0xFF); // Set stencil buffer to 1 wherever the black hole is rendered
-                glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-                glStencilMask(0xFF);
-                glClear(GL_STENCIL_BUFFER_BIT);  // Clear previous stencil data
-
-                // Draw the model
-                // glBindVertexArray(node->vertexArrayObjectID);
-                // glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
-
-                bhShader->deactivate();
-            };
+            // Do nothing; this is handled in updateStencilBuffer();
             break;
         case POINT_LIGHT: break;
         case SPOT_LIGHT: break;
@@ -432,11 +414,8 @@ void renderNode(SceneNode* node) {
 void renderToGBuffer(GLFWwindow* window) {
     gBufferShader->activate();
 
-    // Bind the framebuffer to gBuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, gBuffer.fboID);
-
     // Ensure background color doesn't leak into gBuffer
-    glClearColor(0.0, 0.0, 0.0, 1.0);
+    //glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     
     renderNode(rootNode);
@@ -444,12 +423,31 @@ void renderToGBuffer(GLFWwindow* window) {
     gBufferShader->deactivate();
 }
 
+void updateStencilBuffer(GLFWwindow* window) {
+    if (bhNode->vertexArrayObjectID != -1) {
+        bhShader->activate();  // TODO: Fix all of this
+        // Calculate MVP matrix (perspective)
+        glm::mat4 MVP = perspVP * bhNode->currentTransformationMatrix;
+        // Pass MVP matrix
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(MVP));
+
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);  // Set stencil buffer to 1 wherever the black hole is rendered
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        glStencilMask(0xFF);
+        glClear(GL_STENCIL_BUFFER_BIT);  // Clear previous stencil data
+
+        // Draw the model
+        glBindVertexArray(bhNode->vertexArrayObjectID);
+        glDrawElements(GL_TRIANGLES, bhNode->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+
+        bhShader->deactivate();
+    }
+}
+
 void renderToScreen(GLFWwindow* window) {
     deferredShader->activate();
-
-    // Bind the framebuffer to screen
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     
+    // Clear the screen's color and depth buffers
     glClearColor(0.3f, 0.5f, 0.8f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -463,8 +461,17 @@ void renderToScreen(GLFWwindow* window) {
 }
 
 void renderFrame(GLFWwindow* window) {
+    // Bind the framebuffer to gBuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, gBuffer.fboID);
+
     // First render pass
     renderToGBuffer(window);
+
+    // Bind the framebuffer to screen
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Update the stencil buffer with the black hole
+    //updateStencilBuffer(window);
 
     // Deferred render pass
     renderToScreen(window);
