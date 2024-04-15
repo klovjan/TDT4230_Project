@@ -33,10 +33,12 @@ SceneNode* bhNode;
 SceneNode* light0Node;
 SceneNode* light1Node;
 SceneNode* light2Node;
-// Screen-filling quad node
-SceneNode* screenQuadNode;
 
-unsigned int gBuffer;
+// Screen-filling quad for deferred rendering
+unsigned int screenQuadVAO;
+Mesh screenQuad;
+
+Framebuffer gBuffer;
 
 unsigned int NUM_LIGHTS;
 
@@ -73,25 +75,6 @@ double gameElapsedTime = debug_startTime;
 //     bool a_placeholder_value;
 // };
 // LightSource lightSources[/*Put number of light sources you want here*/];
-
-int setUpTexture(PNGImage image) {
-    unsigned int textureID = -1;
-    
-    // Generate and populate texture
-    glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height,
-                 0, GL_RGBA, GL_UNSIGNED_BYTE, image.pixels.data());
-
-    // Anti-aliasing settings
-    glGenerateMipmap(GL_TEXTURE_2D);
-    // -- minification
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-    // -- magnification
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    return textureID;
-}
 
 // Static wrapper function to allow passing it as an argument
 static void keyboardInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -201,17 +184,9 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     /* Add BH */
 
     /* Add screen-filling quad */
-    Mesh screenQuad = generateQuad();
+    screenQuad = generateQuad();
 
-    unsigned int quadVAO = generateBuffer(screenQuad);
-
-    screenQuadNode = createSceneNode();
-
-    //rootNode->children.push_back(quadNode);
-
-    screenQuadNode->vertexArrayObjectID = quadVAO;
-    screenQuadNode->VAOIndexCount = screenQuad.indices.size();
-    screenQuadNode->nodeType = GEOMETRY_2D;
+    screenQuadVAO = generateBuffer(screenQuad);
     /* Add screen-filling quad */
 
 
@@ -244,9 +219,10 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     //light0Node->position = glm::vec3(5.0f, 25.0f, 20.0f);
     //light1Node->position = glm::vec3(-5.0f, 25.0f, 20.0f);
 
+    gBufferShader->activate();
     glUniform1i(6, NUM_LIGHTS);  // Note: doing this here assumes NUM_LIGHTS is constant
+    gBufferShader->deactivate();
     /* Add point lights */
-
 
     getTimeDeltaSeconds();
 
@@ -259,15 +235,6 @@ void updateFrame(GLFWwindow* window) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // double timeDelta = getTimeDeltaSeconds();
-
-    const float ballBottomY = boxNode->position.y - (boxDimensions.y/2) + ballRadius;
-
-    const float cameraWallOffset = 30; // Arbitrary addition to prevent ball from going too much into camera
-
-    const float ballMinX = boxNode->position.x - (boxDimensions.x/2) + ballRadius;
-    const float ballMaxX = boxNode->position.x + (boxDimensions.x/2) - ballRadius;
-    const float ballMinZ = boxNode->position.z - (boxDimensions.z/2) + ballRadius;
-    const float ballMaxZ = boxNode->position.z + (boxDimensions.z/2) - ballRadius - cameraWallOffset;
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
         mouseLeftPressed = true;
@@ -290,17 +257,15 @@ void updateFrame(GLFWwindow* window) {
 
     glm::mat4 perspProjection = glm::perspective(glm::radians(80.0f), float(windowWidth) / float(windowHeight), 0.1f, 350.f);
     glm::mat4 orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight), 0.1f, 350.f);
-
-    glm::vec3 cameraPosition = glm::vec3(0, 2, -20);
-
-    // Some math to make the camera move in a nice way
     
     camera->updateCamera(getTimeDeltaSeconds());
     glm::mat4 cameraTransform = camera->getViewMatrix();
 
     // Pass camera position to fragment shader, for specular lighting
+    gBufferShader->activate();
     glm::vec3 eyePosition = glm::vec3(cameraTransform * glm::vec4(0, 0, 0, 1));
     glUniform3fv(10, 1, glm::value_ptr(eyePosition));
+    gBufferShader->deactivate();
 
     perspVP = perspProjection * cameraTransform;
     orthoVP = orthoProjection;
@@ -333,6 +298,7 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
         case GEOMETRY: break;
         case GEOMETRY_2D: break;
         case NORMAL_MAPPED: break;
+        case BLACK_HOLE: break;
         case POINT_LIGHT: {
             glm::vec4 lightCoord = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
 
@@ -355,6 +321,8 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
 }
 
 void renderNode(SceneNode* node) {
+    gBufferShader->activate();
+
     // Pass model matrix
     glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
 
@@ -367,9 +335,13 @@ void renderNode(SceneNode* node) {
     glUniform3fv(11, 1, glm::value_ptr(ballPos));
     glUniform1f(12, float(ballRadius));
 
+    gBufferShader->deactivate();
+
     switch(node->nodeType) {
         case GEOMETRY:
             if(node->vertexArrayObjectID != -1) {
+                gBufferShader->activate();
+
                 // Pass renderMode uniform
                 glUniform1i(13, GEOMETRY);
                 // Calculate MVP matrix (perspective)
@@ -380,10 +352,14 @@ void renderNode(SceneNode* node) {
                 // Draw the model
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+
+                gBufferShader->deactivate();
             };
             break;
         case GEOMETRY_2D:
             if(node->vertexArrayObjectID != -1) {
+                gBufferShader->activate();
+
                 // Pass renderMode uniform
                 glUniform1i(13, GEOMETRY_2D);
                 // Bind texture unit
@@ -397,10 +373,14 @@ void renderNode(SceneNode* node) {
                 glBindVertexArray(node->vertexArrayObjectID);
 
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+
+                gBufferShader->deactivate();
             };
             break;
         case NORMAL_MAPPED:
             if (node->vertexArrayObjectID != -1) {
+                gBufferShader->activate();
+
                 // Pass renderMode uniform
                 glUniform1i(13, NORMAL_MAPPED);
                 // Bind texture units
@@ -415,28 +395,28 @@ void renderNode(SceneNode* node) {
                 // Draw the model
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+
+                gBufferShader->deactivate();
             };
             break;
         case BLACK_HOLE:
             if (node->vertexArrayObjectID != -1) {
                 bhShader->activate();  // TODO: Fix all of this
 
-                // Pass renderMode uniform
-                glUniform1i(13, BLACK_HOLE);
                 // Calculate MVP matrix (perspective)
                 glm::mat4 MVP = perspVP * node->currentTransformationMatrix;
                 // Pass MVP matrix
-                glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(MVP));
+                //glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(MVP));
+
+                // glEnable(GL_STENCIL_TEST);
+                // glStencilFunc(GL_ALWAYS, 1, 0xFF); // Set stencil buffer to 1 wherever the black hole is rendered
+                // glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+                // glStencilMask(0xFF);
+                // glClear(GL_STENCIL_BUFFER_BIT);  // Clear previous stencil data
 
                 // Draw the model
-                glBindVertexArray(node->vertexArrayObjectID);
-                glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
-
-                glEnable(GL_STENCIL_TEST);
-                glStencilFunc(GL_ALWAYS, 1, 0xFF); // Set stencil buffer to 1 wherever the black hole is rendered
-                glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-                glStencilMask(0xFF);
-                glClear(GL_STENCIL_BUFFER_BIT);  // Clear previous stencil data
+                // glBindVertexArray(node->vertexArrayObjectID);
+                // glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
 
                 bhShader->deactivate();
             };
@@ -454,8 +434,11 @@ void renderToGBuffer(GLFWwindow* window) {
     gBufferShader->activate();
 
     // Bind the framebuffer to gBuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);  // TODO
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+    // Ensure background color doesn't leak into gBuffer
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    
     renderNode(rootNode);
 
     gBufferShader->deactivate();
@@ -467,16 +450,19 @@ void renderToScreen(GLFWwindow* window) {
     // Bind the framebuffer to screen
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    deferredShader->deactivate();
+    glClearColor(0.3f, 0.5f, 0.8f, 1.0f);
+    // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    renderNode(screenQuadNode);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, gBuffer.colorTexture);
+
+    glBindVertexArray(screenQuadVAO);
+    glDrawElements(GL_TRIANGLES, screenQuad.indices.size(), GL_UNSIGNED_INT, nullptr);
+
+    deferredShader->deactivate();
 }
 
 void renderFrame(GLFWwindow* window) {
-    int windowWidth, windowHeight;
-    glfwGetWindowSize(window, &windowWidth, &windowHeight);
-    glViewport(0, 0, windowWidth, windowHeight);
-
     // First render pass
     renderToGBuffer(window);
 

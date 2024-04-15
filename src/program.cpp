@@ -51,6 +51,8 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
 
         // Flip buffers
         glfwSwapBuffers(window);
+
+        printGLError();
     }
 }
 
