@@ -31,8 +31,8 @@ uniform layout(binding = 2) sampler2D roughnessMapSampler;
 uniform LightSource lightSource[MAX_LIGHTS];
 
 out layout(location = 0) vec4 gColor;
-out layout(location = 1) vec3 gPosition;
-out layout(location = 2) vec3 gNormal;
+out layout(location = 1) vec4 gPosition;
+out layout(location = 2) vec4 gNormal;
 
 // Not an output value, since we are rendering into the gBuffer
 vec4 color;
@@ -184,7 +184,6 @@ void main()
     }
 
     gColor = color;
-    //gColor = vec4(normNormal, 1.0f);
-    gPosition = modelPos;
-    gNormal = normNormal;
+    gPosition = vec4(modelPos, 1.0f);
+    gNormal = vec4(normNormal, 1.0f);
 }

@@ -13,7 +13,7 @@ void main() {
     vec3 position = texture(gPosition, textureCoordinates).rgb;
     vec3 normal = texture(gNormal, textureCoordinates).rgb;
 
-    // color = vec4(normal, 1.0f);
+    // color = vec4(normalize(position), 1.0f);
     // color = vec4(position, 1.0f);
 
     // color = vec4(vec3((textureCoordinates.x+textureCoordinates.y) / 2), 1.0f);
