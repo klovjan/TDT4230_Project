@@ -30,8 +30,12 @@ uniform layout(binding = 1) sampler2D normalMapSampler;
 uniform layout(binding = 2) sampler2D roughnessMapSampler;
 uniform LightSource lightSource[MAX_LIGHTS];
 
-out vec4 color;
 out layout(location = 0) vec4 gColor;
+out layout(location = 1) vec3 gPosition;
+out layout(location = 2) vec3 gNormal;
+
+// Not an output value, since we are rendering into the gBuffer
+vec4 color;
 
 float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453); }
 float dither(vec2 uv) { return (rand(uv)*2.0-1.0) / 256.0; }
@@ -75,7 +79,7 @@ vec3 surfaceColor = vec3(1.0f);
 // Fragment normal, which may be different from input (interpolated) normal
 // E.g. If the surface has a normal map
 vec3 fragmentNormal = normal;
-vec3 correctedFragmentNormal = vec3(1.0f);
+vec3 normNormal;
 
 // Roughness
 float roughness = 64.0f;
@@ -83,7 +87,7 @@ float roughness = 64.0f;
 
 void render3D()
 {
-    vec3 normNormal = normalize(fragmentNormal);  // Normalize interpolated normals
+    normNormal = normalize(fragmentNormal);  // Normalize interpolated normals
 
     // Vector from fragment to ball -- for ball shadows
     vec3 ballDir = ballPos - modelPos;
@@ -180,4 +184,7 @@ void main()
     }
 
     gColor = color;
+    //gColor = vec4(normNormal, 1.0f);
+    gPosition = modelPos;
+    gNormal = normNormal;
 }

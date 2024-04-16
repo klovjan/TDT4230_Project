@@ -35,9 +35,12 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
     glEnable(GL_STENCIL_TEST);
 
     // Set default colour after clearing the colour buffer
+    // This value is overwritten in renderFrame()
     glClearColor(0.3f, 0.5f, 0.8f, 1.0f);
 
-	initGame(window, options);
+    // No buffer clearing here; this is done in renderFrame(), once for each framebuffer object
+
+	initScene(window, options);
 
     // Rendering Loop
     while (!glfwWindowShouldClose(window))

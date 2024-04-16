@@ -108,8 +108,8 @@ static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
     glfwSetCursorPos(window, windowWidth / 2, windowHeight / 2);
 }
 
-void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
-    options = gameOptions;
+void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
+    options = clOptions;
 
     // Initialise camera object
     camera = new Gloom::Camera(glm::vec3(0, 2, -20), 15.0f, 0.005f);
@@ -229,6 +229,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     std::cout << fmt::format("Initialized scene with {} SceneNodes.", totalChildren(rootNode)) << std::endl;
 
     gBuffer = initGBuffer();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, gBuffer.fboID);
 }
 
 void updateFrame(GLFWwindow* window) {
@@ -451,8 +453,18 @@ void renderToScreen(GLFWwindow* window) {
     glClearColor(0.3f, 0.5f, 0.8f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, gBuffer.colorTexture);
+    glBindTextureUnit(0, gBuffer.colorTexture);
+    glBindTextureUnit(1, gBuffer.posTexture);
+    glBindTextureUnit(2, gBuffer.normalTexture);
+
+    // glActiveTexture(GL_TEXTURE0);
+    // glBindTexture(GL_TEXTURE_2D, gBuffer.colorTexture);
+
+    // glActiveTexture(GL_TEXTURE1);
+    // glBindTexture(GL_TEXTURE_2D, gBuffer.posTexture);
+
+    // glActiveTexture(GL_TEXTURE2);
+    // glBindTexture(GL_TEXTURE_2D, gBuffer.normalTexture);
 
     glBindVertexArray(screenQuadVAO);
     glDrawElements(GL_TRIANGLES, screenQuad.indices.size(), GL_UNSIGNED_INT, nullptr);
