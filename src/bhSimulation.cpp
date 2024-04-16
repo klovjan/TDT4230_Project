@@ -11,7 +11,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <fmt/format.h>
-#include "gamelogic.h"
+#include "bhSimulation.h"
 #include "sceneGraph.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/transform.hpp>
@@ -95,6 +95,7 @@ static void mouseButtonCallback(GLFWwindow* window, int button, int action, int 
         camera->handleMouseButtonInputs(button, action);
     }
 }
+
 
 // Static wrapper function to allow passing it as an argument
 static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
