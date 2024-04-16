@@ -33,6 +33,7 @@ uniform LightSource lightSource[MAX_LIGHTS];
 out layout(location = 0) vec4 gColor;
 out layout(location = 1) vec4 gPosition;
 out layout(location = 2) vec4 gNormal;
+out layout(location = 3) vec4 gStencil;
 
 // Not an output value, since we are rendering into the gBuffer
 vec4 color;
@@ -186,4 +187,5 @@ void main()
     gColor = color;
     gPosition = vec4(modelPos, 1.0f);
     gNormal = vec4(normNormal, 1.0f);
+    gStencil = vec4(1.0f, 0.0f, 0.0f, 0.0f);
 }

@@ -118,7 +118,7 @@ Framebuffer initGBuffer() {
     unsigned int gBufferID;
     glGenFramebuffers(1, &gBufferID);
     glBindFramebuffer(GL_FRAMEBUFFER, gBufferID);
-    unsigned int gColor, gPosition, gNormal;
+    unsigned int gColor, gPosition, gNormal, gStencil, gDepth;
 
     // - color buffer
     glGenTextures(1, &gColor);
@@ -143,11 +143,26 @@ Framebuffer initGBuffer() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gNormal, 0);
+
+    // - stencil texture
+    glGenTextures(1, &gStencil);
+    glBindTexture(GL_TEXTURE_2D, gStencil);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, windowWidth, windowHeight, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, gStencil, 0);
+
+    // - depth renderbuffer
+    glGenRenderbuffers(1, &gDepth);
+    glBindRenderbuffer(GL_RENDERBUFFER, gDepth);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowWidth, windowHeight);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, gDepth);
     
     // - tell OpenGL which color attachments we'll use (of this framebuffer) for rendering 
-    unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-    glDrawBuffers(3, attachments);
+    unsigned int attachments[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+    glDrawBuffers(4, attachments);
 
+    // - rebind the default framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     
     Framebuffer framebuffer;
@@ -156,6 +171,7 @@ Framebuffer initGBuffer() {
     framebuffer.colorTexture = gColor;
     framebuffer.posTexture = gPosition;
     framebuffer.normalTexture = gNormal;
+    framebuffer.stencilTexture = gStencil;
 
     return framebuffer;
 }

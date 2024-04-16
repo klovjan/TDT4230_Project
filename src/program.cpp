@@ -15,6 +15,7 @@
 #include <utilities/timeutils.h>
 
 
+
 void runProgram(GLFWwindow* window, CommandLineOptions options)
 {
     // Enable depth (Z) buffer (accept "closest" fragment)
@@ -28,11 +29,8 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
     glDisable(GL_DITHER);
 
     // Enable transparency
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    // Enable stencil buffer
-    glEnable(GL_STENCIL_TEST);
+    // glEnable(GL_BLEND);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Set default colour after clearing the colour buffer
     // This value is overwritten in renderFrame()
