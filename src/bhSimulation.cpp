@@ -42,7 +42,8 @@ Framebuffer gBuffer;
 
 unsigned int NUM_LIGHTS;
 
-double ballRadius = 3.0f;
+float ballRadius = 3.0f;
+float bhRaius = 40.0f;
 
 // These are heap allocated, because they should not be initialised at the start of the program
 Gloom::Shader* gBufferShader;
@@ -78,8 +79,6 @@ double gameElapsedTime = debug_startTime;
 
 // Static wrapper function to allow passing it as an argument
 static void keyboardInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    // Retrieve the camera instance
-    //Gloom::Camera* camera = static_cast<Gloom::Camera*>(glfwGetWindowUserPointer(window));
     if (camera)
     {
         camera->handleKeyboardInputs(key, action);
@@ -88,8 +87,6 @@ static void keyboardInputCallback(GLFWwindow* window, int key, int scancode, int
 
 // Static wrapper function to allow passing it as an argument
 static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-    // Retrieve the camera instance
-    //Gloom::Camera* camera = static_cast<Gloom::Camera*>(glfwGetWindowUserPointer(window));
     if (camera)
     {
         camera->handleMouseButtonInputs(button, action);
@@ -99,8 +96,6 @@ static void mouseButtonCallback(GLFWwindow* window, int button, int action, int 
 
 // Static wrapper function to allow passing it as an argument
 static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
-    // Retrieve the camera instance
-    //Gloom::Camera* camera = static_cast<Gloom::Camera*>(glfwGetWindowUserPointer(window));
     if (camera)
     {
         camera->handleCursorPosInput(xpos, ypos);
@@ -147,8 +142,8 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     boxNode  = createSceneNode();
     ballNode = createSceneNode();
     
-    rootNode->children.push_back(ballNode);
     rootNode->children.push_back(boxNode);
+    rootNode->children.push_back(ballNode);
 
     boxNode->vertexArrayObjectID     = boxVAO;
     boxNode->VAOIndexCount           = box.indices.size();
@@ -171,7 +166,7 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     /* Add textures for walls */
 
     /* Add BH */
-    Mesh bhSphere = generateSphere(2.0f, 40, 40, true);
+    Mesh bhSphere = generateSphere(40.0f, 40, 40, true);
 
     unsigned int bhVAO = generateBuffer(bhSphere);
 
@@ -374,7 +369,6 @@ void renderNode(SceneNode* node) {
 
                 // Draw the model
                 glBindVertexArray(node->vertexArrayObjectID);
-
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
 
                 gBufferShader->deactivate();
@@ -403,7 +397,28 @@ void renderNode(SceneNode* node) {
             };
             break;
         case BLACK_HOLE:
-            // Do nothing; this is handled later
+            if (node->vertexArrayObjectID != -1) {
+                gBufferShader->activate();
+                // Disable all textures except the stencil
+                glColorMaski(0, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Color (disable)
+                glColorMaski(1, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Position (disable)
+                glColorMaski(2, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Normal (disable)
+
+                // Pass renderMode uniform
+                glUniform1i(13, BLACK_HOLE);
+                // Update the "stencil" buffer with the black hole
+                glm::mat4 MVP = perspVP * bhNode->currentTransformationMatrix;
+                glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(MVP));
+
+                glBindVertexArray(node->vertexArrayObjectID);
+                glDrawElements(GL_TRIANGLES, bhNode->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+
+                // Re-enable all textures
+                glColorMaski(0, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                glColorMaski(1, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                glColorMaski(2, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                gBufferShader->deactivate();
+            }
             break;
         case POINT_LIGHT: break;
         case SPOT_LIGHT: break;
@@ -424,28 +439,6 @@ void renderToGBuffer(GLFWwindow* window) {
     renderNode(rootNode);
 
     gBufferShader->deactivate();
-
-
-    bhShader->activate();
-
-    // Disable all textures except the stencil
-    glColorMaski(0, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Color (disable)
-    glColorMaski(1, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Position (disable)
-    glColorMaski(2, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Normal (disable)
-    glColorMaski(3, GL_TRUE, GL_FALSE, GL_FALSE, GL_FALSE);  // Binary (enable)
-
-    // Update the "stencil" buffer with the black hole
-    glm::mat4 MVP = perspVP * bhNode->currentTransformationMatrix;
-    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(MVP));
-    glDrawElements(GL_TRIANGLES, bhNode->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
-
-    // Re-enable all textures
-    glColorMaski(0, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glColorMaski(1, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glColorMaski(2, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glColorMaski(3, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-    bhShader->deactivate();
 }
 
 void renderToScreen(GLFWwindow* window) {

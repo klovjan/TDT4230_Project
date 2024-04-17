@@ -17,9 +17,10 @@ void main() {
     
     color = colorVal;
 
-    if (stencilVal == 0.0f) {
-        color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    if (stencilVal == 1.0f) {
+        color = clamp(vec4(colorVal.r+0.4f, colorVal.gba), 0.0f, 1.0f);
     }
+    //color = vec4(stencilVal, 1.0f);
 
     // color = vec4(normalize(position), 1.0f);
     // color = vec4(position, 1.0f);

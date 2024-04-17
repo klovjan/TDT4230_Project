@@ -1,8 +1,8 @@
 #version 430 core
 
-out layout(location = 3) vec4 gStencil;
+out layout(location = 3) vec4 stencilBuffer;
 
 void main()
 {
-    gStencil = vec4(0.0f);
+    stencilBuffer = vec4(1.0f);
 }

@@ -173,19 +173,27 @@ void main()
 {   
     if (renderMode == GEOMETRY) {
         render3D();
+        gColor = color;
+        gPosition = vec4(modelPos, 1.0f);
+        gNormal = vec4(normNormal, 1.0f);
+        gStencil = vec4(0.0f, 0.0f, 0.0f, 1.0f);
     }
     else if (renderMode == GEOMETRY_2D) {
         render2D();
+        gColor = color;
+        gPosition = vec4(modelPos, 1.0f);
+        gNormal = vec4(normNormal, 1.0f);
+        gStencil = vec4(0.0f, 0.0f, 0.0f, 1.0f);
     }
     else if (renderMode == NORMAL_MAPPED) {
         renderNormalMapped();
+        gColor = color;
+        gPosition = vec4(modelPos, 1.0f);
+        gNormal = vec4(normNormal, 1.0f);
+        gStencil = vec4(0.0f, 0.0f, 0.0f, 1.0f);
     }
-    else {
+    else if (renderMode == BLACK_HOLE) {
         render3D();
+        gStencil = vec4(1.0f);
     }
-
-    gColor = color;
-    gPosition = vec4(modelPos, 1.0f);
-    gNormal = vec4(normNormal, 1.0f);
-    gStencil = vec4(1.0f, 0.0f, 0.0f, 0.0f);
 }
