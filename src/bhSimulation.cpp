@@ -43,7 +43,7 @@ Framebuffer gBuffer;
 unsigned int NUM_LIGHTS;
 
 float ballRadius = 3.0f;
-float bhRaius = 40.0f;
+float bhRadius = 40.0f;
 
 // These are heap allocated, because they should not be initialised at the start of the program
 Gloom::Shader* gBufferShader;
@@ -51,9 +51,10 @@ Gloom::Shader* bhShader;
 Gloom::Shader* deferredShader;
 Gloom::Camera* camera;
 
-const glm::vec3 boxDimensions(180, 90, 90);
+const glm::vec3 boxDimensions(360, 360, 360);
 
 glm::vec3 ballPosition(0.0f, 0.0f, 0.0f);
+glm::vec3 bhPosition(0.0f, 0.0f, 0.0f);
 
 // Moved to global scope to facilitate use in renderNode()
 glm::mat4 perspVP;
@@ -108,7 +109,7 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     options = clOptions;
 
     // Initialise camera object
-    camera = new Gloom::Camera(glm::vec3(0, 2, -20), 15.0f, 0.005f);
+    camera = new Gloom::Camera(glm::vec3(0, 2, 100), 15.0f, 0.005f);
     glfwSetWindowUserPointer(window, camera);
 
     // Set up keyboard and mouse callbacks for camera operation
@@ -152,6 +153,8 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     ballNode->vertexArrayObjectID    = ballVAO;
     ballNode->VAOIndexCount          = sphere.indices.size();
 
+    boxNode->position = { 0, -10, -80 };
+
 
     /* Add textures for walls */
     // Load textures
@@ -166,7 +169,7 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     /* Add textures for walls */
 
     /* Add BH */
-    Mesh bhSphere = generateSphere(40.0f, 40, 40, true);
+    Mesh bhSphere = generateSphere(bhRadius, 40, 40, true);
 
     unsigned int bhVAO = generateBuffer(bhSphere);
 
@@ -227,11 +230,11 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
 void updateFrame(GLFWwindow* window) {
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
     // double timeDelta = getTimeDeltaSeconds();
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
@@ -253,24 +256,26 @@ void updateFrame(GLFWwindow* window) {
     ballPosition.y = boxNode->position.y;
     ballPosition.z = boxNode->position.z;
 
-    glm::mat4 perspProjection = glm::perspective(glm::radians(80.0f), float(windowWidth) / float(windowHeight), 0.1f, 350.f);
+    glm::mat4 perspProjection = glm::perspective(glm::radians(80.0f), float(windowWidth) / float(windowHeight), 0.1f, 500.f);
     glm::mat4 orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight), 0.1f, 350.f);
     
     camera->updateCamera(getTimeDeltaSeconds());
     glm::mat4 cameraTransform = camera->getViewMatrix();
 
     // Pass camera position to fragment shader, for specular lighting
-    gBufferShader->activate();
     glm::vec3 eyePosition = glm::vec3(cameraTransform * glm::vec4(0, 0, 0, 1));
+    gBufferShader->activate();
     glUniform3fv(10, 1, glm::value_ptr(eyePosition));
     gBufferShader->deactivate();
+
+    deferredShader->activate();
+    glUniform3fv(10, 1, glm::value_ptr(eyePosition));
+    deferredShader->deactivate();
 
     perspVP = perspProjection * cameraTransform;
     orthoVP = orthoProjection;
 
     // Move and rotate various SceneNodes
-    boxNode->position = { 0, -10, -80 };
-
     ballNode->position = ballPosition;
     ballNode->scale = glm::vec3(ballRadius);
     ballNode->rotation = { 0, totalElapsedTime*2, 0 };
@@ -402,7 +407,7 @@ void renderNode(SceneNode* node) {
                 // Disable all textures except the stencil
                 glColorMaski(0, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Color (disable)
                 glColorMaski(1, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Position (disable)
-                glColorMaski(2, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Normal (disable)
+                //glColorMaski(2, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Normal (disable)
 
                 // Pass renderMode uniform
                 glUniform1i(13, BLACK_HOLE);
@@ -416,7 +421,7 @@ void renderNode(SceneNode* node) {
                 // Re-enable all textures
                 glColorMaski(0, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
                 glColorMaski(1, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-                glColorMaski(2, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                //glColorMaski(2, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
                 gBufferShader->deactivate();
             }
             break;
@@ -448,6 +453,17 @@ void renderToScreen(GLFWwindow* window) {
     glClearColor(0.3f, 0.5f, 0.8f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // Pass some uniforms
+    glm::vec3 bhPos = glm::vec3(bhNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1));
+    glUniform3fv(14, 1, glm::value_ptr(bhPos));
+    
+    glm::vec4 bhWorldPos = bhNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
+    glm::vec4 bhClipPos = perspVP * bhWorldPos;
+    glm::vec3 bhNdcPos = glm::vec3(bhClipPos) / bhClipPos.w;
+    glUniform2fv(15, 1, glm::value_ptr(bhNdcPos));
+
+    glUniform1f(16, bhRadius);
+
     glBindTextureUnit(0, gBuffer.colorTexture);
     glBindTextureUnit(1, gBuffer.posTexture);
     glBindTextureUnit(2, gBuffer.normalTexture);
@@ -460,15 +476,14 @@ void renderToScreen(GLFWwindow* window) {
 }
 
 void renderFrame(GLFWwindow* window) {
-    // Bind the framebuffer to gBuffer
+    // Bind the gBuffer
     glBindFramebuffer(GL_FRAMEBUFFER, gBuffer.fboID);
 
     // First render pass
     renderToGBuffer(window);
 
-    // Bind the framebuffer to screen
+    // Bind the default framebuffer (screen)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
 
     // Deferred render pass
     renderToScreen(window);

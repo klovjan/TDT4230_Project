@@ -179,13 +179,31 @@ Mesh generateSphere(float sphereRadius, int slices, int layers, bool inverted) {
                                  nextRadius * currentDirectionY,
                                  nextZ);
 
-            indices.emplace_back(i + 0);
-            indices.emplace_back(i + 1);
-            indices.emplace_back(i + 2);
-            indices.emplace_back(i + 3);
-            indices.emplace_back(i + 4);
-            indices.emplace_back(i + 5);
+            // Inverts the last six normals (if called for)
+            if (inverted) {
+                for (int j = normals.size() - 6; j < normals.size(); j++) {
+                    normals.at(j) = -normals.at(j);
+                }
+            }
 
+            if (!inverted) {
+                indices.emplace_back(i + 0);
+                indices.emplace_back(i + 1);
+                indices.emplace_back(i + 2);
+                indices.emplace_back(i + 3);
+                indices.emplace_back(i + 4);
+                indices.emplace_back(i + 5);
+            }
+            else {
+                indices.emplace_back(i + 0);
+                indices.emplace_back(i + 2);
+                indices.emplace_back(i + 1);
+                indices.emplace_back(i + 3);
+                indices.emplace_back(i + 5);
+                indices.emplace_back(i + 4);
+            }
+
+            // Note: inverted is not handled here
             for (int j = 0; j < 6; j++) {
                 glm::vec3 vertex = vertices.at(i+j);
                 uvs.emplace_back(
