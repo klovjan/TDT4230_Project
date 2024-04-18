@@ -1,10 +1,13 @@
-# TDT4230 - Graphics and Visualization
+# TDT4230 - Graphics and Visualization - Final Project
 
-This is the base code for the NTNU subject TDT4230 assignments. It may also be used for the final project, which we will showcase [here](https://www.idi.ntnu.no/grupper/vis/teaching/)
+This is my final project in the course TDT4230. I have attempted to simulate a black hole by making use of a screen-space effect using deferred rendering techniques.
 
-## What do i do?
+The code is based on the "glowbox" application code, made by Bart Iver van Blokland and Peder Bergebakken Sundt. This application is found at https://github.com/bartvbl/TDT4230-Assignment-1.git.
 
-	git clone --recursive https://github.com/bartvbl/TDT4230-Assignment-1.git
+
+## How to run:
+
+	git clone --recursive https://github.com/klovjan/TDT4230_Project.git
 
 Should you forget the `--recursive` bit, just run:
 

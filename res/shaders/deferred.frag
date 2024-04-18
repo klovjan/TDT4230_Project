@@ -21,31 +21,30 @@ vec3 hitPos = vec3(0.0f);
 vec3 hitNormal = vec3(0.0f);
 
 void raycast(vec3 rayOrigin, vec3 rayDir, vec3 sphereCenter, float sphereRadius) {
-        float t = 0.0f;
-        vec3 L = sphereCenter - rayOrigin;
-        float tca = dot(L, -rayDir);
+    float t = 0.0f;
+    vec3 L = sphereCenter - rayOrigin;
+    float tca = dot(L, rayDir);
 
-        if (tca < 0) {
-            hit = 0.0f;
-            return;
-        }
+    if (tca < 0) {
+        hit = 0.0f;
+        return;
+    }
 
-        float d2 = dot(L, L) - tca * tca;
-        float sphereRadius2 = sphereRadius * sphereRadius;
+    float d2 = dot(L, L) - tca * tca;
+    float sphereRadius2 = sphereRadius * sphereRadius;
 
-        if (d2 > sphereRadius2) {
-            hit = 0.0f;
-            return;
-        }
+    if (d2 > sphereRadius2) {
+        hit = 0.0f;
+        return;
+    }
 
-        float thc = sqrt(sphereRadius2 - d2);
-        t = tca - thc;
+    float thc = sqrt(sphereRadius2 - d2);
+    t = tca - thc;
 
-        hit = 1.0f;
-        hitPos = rayOrigin - rayDir * t;
-        hitNormal = normalize(hitPos - bhPos);
+    hit = 1.0f;
+    hitPos = rayOrigin + rayDir * t;
+    hitNormal = normalize(hitPos - sphereCenter);
 }
-
 
 void main() {
     // Sample the textures
@@ -70,9 +69,15 @@ void main() {
 //            color = vec4(vec3(0.0f), 1.0f);
 //        }
 
-        if (length(reject(viewModelVector, bhModelVector)) < bhShadowRadius) {
-            color = vec4(vec3(0.0f), 1.0f);
-        }
+//        if (length(reject(viewModelVector, bhModelVector)) < bhShadowRadius) {
+//            color = vec4(vec3(0.0f), 1.0f);
+//        }
+        
+        vec2 screen_bhPos = (bhNdcPos + 1.0f) / 2.0f;
+        vec2 screen_modelBHVector_norm = normalize(screen_bhPos - textureCoordinates);
+        vec2 distortedUVSample = textureCoordinates + 0.2 * screen_modelBHVector_norm;
+
+        color = texture(gColor, distortedUVSample);
     }
 
     //color = vec4(normalVal, 1.0f);

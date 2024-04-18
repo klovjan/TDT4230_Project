@@ -462,6 +462,8 @@ void renderToScreen(GLFWwindow* window) {
     glm::vec3 bhNdcPos = glm::vec3(bhClipPos) / bhClipPos.w;
     glUniform2fv(15, 1, glm::value_ptr(bhNdcPos));
 
+    printf("x: %f, y: %f\n", bhNdcPos.x, bhNdcPos.y);
+
     glUniform1f(16, bhRadius);
 
     glBindTextureUnit(0, gBuffer.colorTexture);
