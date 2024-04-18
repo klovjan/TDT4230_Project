@@ -34,6 +34,9 @@ SceneNode* light0Node;
 SceneNode* light1Node;
 SceneNode* light2Node;
 
+// Projection matrix constants
+float FOV = glm::radians(70.0f);
+
 // Screen-filling quad for deferred rendering
 unsigned int screenQuadVAO;
 Mesh screenQuad;
@@ -256,20 +259,38 @@ void updateFrame(GLFWwindow* window) {
     ballPosition.y = boxNode->position.y;
     ballPosition.z = boxNode->position.z;
 
-    glm::mat4 perspProjection = glm::perspective(glm::radians(80.0f), float(windowWidth) / float(windowHeight), 0.1f, 500.f);
+    glm::mat4 perspProjection = glm::perspective(FOV, float(windowWidth) / float(windowHeight), 0.1f, 500.f);
     glm::mat4 orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight), 0.1f, 350.f);
     
     camera->updateCamera(getTimeDeltaSeconds());
     glm::mat4 cameraTransform = camera->getViewMatrix();
 
+    // First pass uniforms
     // Pass camera position to fragment shader, for specular lighting
     glm::vec3 eyePosition = glm::vec3(cameraTransform * glm::vec4(0, 0, 0, 1));
     gBufferShader->activate();
     glUniform3fv(10, 1, glm::value_ptr(eyePosition));
     gBufferShader->deactivate();
 
+    // Deferred shader uniforms
     deferredShader->activate();
     glUniform3fv(10, 1, glm::value_ptr(eyePosition));
+
+    glm::vec3 bhPos = glm::vec3(bhNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1));
+    glUniform3fv(14, 1, glm::value_ptr(bhPos));
+
+    glm::vec4 bhWorldPos = bhNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
+    glm::vec4 bhClipPos = perspVP * bhWorldPos;
+    glm::vec3 bhNdcPos = glm::vec3(bhClipPos) / bhClipPos.w;
+    glUniform2fv(15, 1, glm::value_ptr(bhNdcPos));
+
+    glUniform1f(16, bhRadius);
+
+    float bhFrustumWidth = 2 * tan(FOV / 2.0f) * glm::length(eyePosition - bhPos);
+    float bhScreenPercent = bhRadius*2 / bhFrustumWidth;
+    glUniform1f(17, bhScreenPercent);
+
+    printf("%f\n", bhScreenPercent);
     deferredShader->deactivate();
 
     perspVP = perspProjection * cameraTransform;
@@ -406,7 +427,7 @@ void renderNode(SceneNode* node) {
                 gBufferShader->activate();
                 // Disable all textures except the stencil
                 glColorMaski(0, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Color (disable)
-                glColorMaski(1, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Position (disable)
+                //glColorMaski(1, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Position (disable)
                 //glColorMaski(2, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Normal (disable)
 
                 // Pass renderMode uniform
@@ -420,7 +441,7 @@ void renderNode(SceneNode* node) {
 
                 // Re-enable all textures
                 glColorMaski(0, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-                glColorMaski(1, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                //glColorMaski(1, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
                 //glColorMaski(2, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
                 gBufferShader->deactivate();
             }
@@ -452,19 +473,6 @@ void renderToScreen(GLFWwindow* window) {
     // Clear the screen's color and depth buffers
     glClearColor(0.3f, 0.5f, 0.8f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Pass some uniforms
-    glm::vec3 bhPos = glm::vec3(bhNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1));
-    glUniform3fv(14, 1, glm::value_ptr(bhPos));
-    
-    glm::vec4 bhWorldPos = bhNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
-    glm::vec4 bhClipPos = perspVP * bhWorldPos;
-    glm::vec3 bhNdcPos = glm::vec3(bhClipPos) / bhClipPos.w;
-    glUniform2fv(15, 1, glm::value_ptr(bhNdcPos));
-
-    printf("x: %f, y: %f\n", bhNdcPos.x, bhNdcPos.y);
-
-    glUniform1f(16, bhRadius);
 
     glBindTextureUnit(0, gBuffer.colorTexture);
     glBindTextureUnit(1, gBuffer.posTexture);

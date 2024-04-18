@@ -6,6 +6,7 @@ uniform layout(location = 10) vec3 eyePos;
 uniform layout(location = 14) vec3 bhPos;
 uniform layout(location = 15) vec2 bhNdcPos;
 uniform layout(location = 16) float bhRadius;
+uniform layout(location = 17) float bhScreenPercent;
 
 uniform layout(binding = 0) sampler2D gColor;
 uniform layout(binding = 1) sampler2D gPosition;
@@ -68,23 +69,35 @@ void main() {
 //        if (hit == 1.0f) {
 //            color = vec4(vec3(0.0f), 1.0f);
 //        }
+        
+        // Perform black hole distortion
+        vec2 screen_bhPos = (bhNdcPos + 1.0f) / 2.0f;  // (0, 0) is bottom left of screen, (1, 1) is top right
+        vec2 screen_modelBHVector = screen_bhPos - textureCoordinates;
+        vec2 screen_modelBHVector_norm = normalize(screen_modelBHVector);
+        
+        float distortion = 1 - dot(modelNormal, normalize(viewModelVector));
+
+        vec2 distortedUVSample = textureCoordinates + distortion * screen_modelBHVector_norm;
+
+        color = texture(gColor, distortedUVSample);
+
+        float modelBHDist_norm = pow(length(screen_modelBHVector) / bhScreenPercent, 2.0f);
+
+        color = vec4(vec3(modelBHDist_norm), 1.0f);
 
 //        if (length(reject(viewModelVector, bhModelVector)) < bhShadowRadius) {
 //            color = vec4(vec3(0.0f), 1.0f);
 //        }
-        
-        vec2 screen_bhPos = (bhNdcPos + 1.0f) / 2.0f;
-        vec2 screen_modelBHVector_norm = normalize(screen_bhPos - textureCoordinates);
-        vec2 distortedUVSample = textureCoordinates + 0.2 * screen_modelBHVector_norm;
-
-        color = texture(gColor, distortedUVSample);
     }
+//    vec3 viewModelVector = eyePos - modelPos;
+//
+//    color = vec4(normalize(viewModelVector), 1.0f);
 
     //color = vec4(normalVal, 1.0f);
 
     //color = vec4(vec3(stencilVal), 1.0f);
 
-    //color = vec4(abs(normalize(modelPos)), 1.0f);
+//    color = vec4(abs(normalize(modelPos)), 1.0f);
 
     // color = vec4(vec3((textureCoordinates.x+textureCoordinates.y) / 2), 1.0f);
 }

@@ -94,7 +94,7 @@ void render3D()
     vec3 ballDir = ballPos - modelPos;
 
     // Ambient
-    ambientColor = vec3(0.05f);
+    ambientColor = vec3(0.10f);
 
     // Diffuse, Specular
     for (int i = 0; i < 3; i++) {
@@ -194,6 +194,7 @@ void main()
     }
     else if (renderMode == BLACK_HOLE) {
         render3D();
+        gPosition = vec4(modelPos, 1.0f);
         gNormal = vec4(normNormal, 1.0f);
         gStencil = vec4(1.0f);
     }
