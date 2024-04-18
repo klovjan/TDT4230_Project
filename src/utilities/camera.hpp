@@ -77,8 +77,8 @@ namespace Gloom
         void handleCursorPosInput(double xpos, double ypos)
         {
             // Do nothing if the left mouse button is not pressed
-            // if (isMousePressed == false)
-            //     return;
+             if (isMousePressed == false)
+                 return;
 
             // There should be no movement when the mouse button is released
             if (resetMouse)
