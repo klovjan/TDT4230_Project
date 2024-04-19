@@ -79,11 +79,11 @@ void main() {
         vec2 screen_modelBHVector_norm = normalize(screen_modelBHVector);
 
         float modelBHDist_norm = length(screen_modelBHVector) / bhScreenPercent / 2.0f;
-        if (modelBHDist_norm < 0.15f) {
+        if (modelBHDist_norm < 0.1f) {
             color = vec4(vec3(0.0f), 1.0f);
         }
         else {
-            float distortion = pow(1 - modelBHDist_norm, 8.0f);
+            float distortion = pow(1 - modelBHDist_norm, 7.0f)*bhScreenPercent;
             color = vec4(vec3(max(distortion, 0.0f)), 1.0f);
 
             vec2 distortedUVSample = textureCoordinates + max(distortion, 0.0f) * screen_modelBHVector_norm;

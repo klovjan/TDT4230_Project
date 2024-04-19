@@ -194,8 +194,6 @@ void main()
     }
     else if (renderMode == BLACK_HOLE) {
         render3D();
-        gPosition = vec4(modelPos, 1.0f);
-        gNormal = vec4(normNormal, 1.0f);
         gStencil = vec4(1.0f);
     }
 }

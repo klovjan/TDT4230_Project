@@ -265,14 +265,14 @@ void updateFrame(GLFWwindow* window) {
     camera->updateCamera(getTimeDeltaSeconds());
     glm::mat4 cameraTransform = camera->getViewMatrix();
 
-    // First pass uniforms
+    /// First pass uniforms
     // Pass camera position to fragment shader, for specular lighting
     glm::vec3 eyePosition = glm::vec3(cameraTransform * glm::vec4(0, 0, 0, 1));
     gBufferShader->activate();
     glUniform3fv(10, 1, glm::value_ptr(eyePosition));
     gBufferShader->deactivate();
 
-    // Deferred shader uniforms
+    /// Deferred shader uniforms
     deferredShader->activate();
     glUniform3fv(10, 1, glm::value_ptr(eyePosition));
 
@@ -426,8 +426,8 @@ void renderNode(SceneNode* node) {
                 gBufferShader->activate();
                 // Disable all textures except the stencil
                 glColorMaski(0, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Color (disable)
-                //glColorMaski(1, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Position (disable)
-                //glColorMaski(2, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Normal (disable)
+                glColorMaski(1, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Position (disable)
+                glColorMaski(2, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Normal (disable)
 
                 // Pass renderMode uniform
                 glUniform1i(13, BLACK_HOLE);
@@ -440,8 +440,8 @@ void renderNode(SceneNode* node) {
 
                 // Re-enable all textures
                 glColorMaski(0, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-                //glColorMaski(1, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-                //glColorMaski(2, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                glColorMaski(1, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                glColorMaski(2, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
                 gBufferShader->deactivate();
             }
             break;
