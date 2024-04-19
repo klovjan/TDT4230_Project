@@ -172,7 +172,7 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     /* Add textures for walls */
 
     /* Add BH */
-    Mesh bhSphere = generateSphere(bhRadius, 40, 40, true);
+    Mesh bhSphere = generateSphere(bhRadius, 100, 100, true);
 
     unsigned int bhVAO = generateBuffer(bhSphere);
 
@@ -259,7 +259,7 @@ void updateFrame(GLFWwindow* window) {
     ballPosition.y = boxNode->position.y;
     ballPosition.z = boxNode->position.z;
 
-    glm::mat4 perspProjection = glm::perspective(FOV, float(windowWidth) / float(windowHeight), 0.1f, 500.f);
+    glm::mat4 perspProjection = glm::perspective(FOV, float(windowWidth) / float(windowHeight), 0.1f, 1000.f);
     glm::mat4 orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight), 0.1f, 350.f);
     
     camera->updateCamera(getTimeDeltaSeconds());
@@ -290,7 +290,6 @@ void updateFrame(GLFWwindow* window) {
     float bhScreenPercent = bhRadius*2 / bhFrustumWidth;
     glUniform1f(17, bhScreenPercent);
 
-    printf("%f\n", bhScreenPercent);
     deferredShader->deactivate();
 
     perspVP = perspProjection * cameraTransform;
