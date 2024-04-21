@@ -84,6 +84,8 @@ const float debug_startTime = 0;
 double totalElapsedTime = debug_startTime;
 double gameElapsedTime = debug_startTime;
 
+ViewMode viewMode = REGULAR;
+
 //// A few lines to help you if you've never used c++ structs
  //struct LightSource {
  //    bool a_placeholder_value;
@@ -117,8 +119,18 @@ static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
     glfwSetCursorPos(window, windowWidth / 2, windowHeight / 2);
 }
 
-void createBoxGrid(int numRows, int numColumns, int numLayers, int distance, glm::vec3 startingCoordinates) {
-    glm::vec3 dimensions = glm::vec3(30, 30, 30);
+std::vector<glm::vec3> basicColors = {
+    glm::vec3(1, 0, 0), // Red
+    glm::vec3(0, 1, 0), // Green
+    glm::vec3(0, 0, 1), // Blue
+    glm::vec3(0, 1, 1), // Cyan
+    glm::vec3(1, 0, 1), // Magenta
+    glm::vec3(1, 1, 0), // Yellow
+    glm::vec3(1, 1, 1)  // White
+};
+
+void createBoxGrid(int numRows, int numColumns, int numLayers, float size, float distance, glm::vec3 startingCoordinates) {
+    glm::vec3 dimensions = glm::vec3(size, size, size);
     Mesh protoBox = cube(dimensions, glm::vec2(90), true, false);
     unsigned int protoBoxVAO = generateBuffer(protoBox);
 
@@ -130,11 +142,15 @@ void createBoxGrid(int numRows, int numColumns, int numLayers, int distance, glm
                 SceneNode* gridBoxNode = createSceneNode();
                 boxNodes.at(index) = gridBoxNode;
                 gridBoxNode->VAOIndexCount    = protoBox.indices.size();
-                gridBoxNode->nodeType         = NORMAL_MAPPED;
+                gridBoxNode->nodeType         = GEOMETRY;
                 gridBoxNode->position         = glm::vec3(row, column, layer) * glm::vec3(distance) + startingCoordinates;
-                gridBoxNode->textureID        = boxNode->textureID;
-                gridBoxNode->normalMapID      = boxNode->normalMapID;
-                gridBoxNode->roughnessMapID   = boxNode->roughnessMapID;
+                
+                // Cycle through colours
+                float r = float(row) / float(numRows - 1);
+                float g = float(column) / float(numColumns - 1);
+                float b = float(layer) / float(numLayers - 1);
+                gridBoxNode->color = basicColors.at(index % basicColors.size());
+
 
                 rootNode->children.push_back(gridBoxNode);
                 gridBoxNode->vertexArrayObjectID = protoBoxVAO;
@@ -197,12 +213,13 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
 
     ballNode->vertexArrayObjectID    = ballVAO;
     ballNode->VAOIndexCount          = sphere.indices.size();
-    ballNode->position = { 0, 0, -50 };
+    ballNode->position = { 0, 0, -100 };
     
 
     // Make box grid
-    glm::vec3 boxGridCoordinates = glm::vec3(0, 100, 100);
-    //createBoxGrid(2, 3, 4, 100, boxGridCoordinates);
+    float boxGridDistances = 150.0f;
+    glm::vec3 boxGridCoordinates = glm::vec3(-boxGridDistances / 2.0f);
+    createBoxGrid(2, 2, 2, 20.0f, boxGridDistances, boxGridCoordinates);
 
     /* Add textures for walls */
     // Load textures
@@ -228,7 +245,7 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     bhNode->vertexArrayObjectID    = bhVAO;
     bhNode->VAOIndexCount          = bhSphere.indices.size();
     bhNode->nodeType               = BLACK_HOLE;
-    bhNode->position               = glm::vec3(0, 0, 50);
+    bhNode->position               = glm::vec3(0, 0, 0);
     /* Add BH */
 
     /* Add screen-filling quad */
@@ -386,6 +403,8 @@ void updateUniforms(glm::mat4 cameraTransform) {
     glm::vec2 screenDimensions = glm::vec2(windowWidth, windowHeight);
     glUniform2fv(18, 1, glm::value_ptr(screenDimensions));
 
+    glUniform1i(19, viewMode);
+
     deferredShader->deactivate();
 }
 
@@ -488,6 +507,10 @@ void renderNode(SceneNode* node) {
                 glm::mat4 MVP = perspVP * node->currentTransformationMatrix;
                 // Pass MVP matrix
                 glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(MVP));
+
+                // For non-textured surface colors -- pass surface color
+                glm::vec3 surfaceColor = node->color;
+                glUniform3fv(14, 1, glm::value_ptr(surfaceColor));
 
                 // Draw the model
                 glBindVertexArray(node->vertexArrayObjectID);

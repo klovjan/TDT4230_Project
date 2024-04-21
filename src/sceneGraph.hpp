@@ -23,6 +23,8 @@ struct SceneNode {
 		rotation = glm::vec3(0, 0, 0);
 		scale = glm::vec3(1, 1, 1);
 
+		color = glm::vec3(1, 1, 1);
+
         referencePoint = glm::vec3(0, 0, 0);
         vertexArrayObjectID = -1;
         VAOIndexCount = 0;
@@ -38,6 +40,9 @@ struct SceneNode {
 	glm::vec3 position;
 	glm::vec3 rotation;
 	glm::vec3 scale;
+
+	// The node's surface color (if not textured)
+	glm::vec3 color;
 
 	// A transformation matrix representing the transformation of the node's location relative to its parent. This matrix is updated every frame.
 	glm::mat4 currentTransformationMatrix;

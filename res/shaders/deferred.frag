@@ -15,6 +15,7 @@ uniform layout(location = 15) vec3 bhScreenPos;
 uniform layout(location = 16) float bhRadius;
 uniform layout(location = 17) float bhScreenPercent;
 uniform layout(location = 18) vec2 screenDimensions;
+uniform layout(location = 19) int viewMode;
 
 uniform layout(binding = 0) sampler2D gColor;
 uniform layout(binding = 1) sampler2D gPosition;
@@ -55,7 +56,7 @@ vec3 hitNormal = vec3(0.0f);
 //    hitNormal = normalize(hitPos - sphereCenter);
 //}
 
-void main() {
+void regularRender() {
     // Sample the textures
     vec4 modelColor = texture(gColor, textureCoordinates);
     vec3 modelPos = texture(gPosition, textureCoordinates).rgb;
@@ -66,8 +67,6 @@ void main() {
 
     // If this pixel should be affected by the black hole ...
     if (stencilVal == 1.0f) {
-        //color = clamp(vec4(modelColor.r+0.4f, modelColor.gba), 0.0f, 1.0f);
-
         vec3 viewModelVector = eyePos - modelPos;
         vec3 bhModelVector = bhPos - modelPos;
 
@@ -91,19 +90,38 @@ void main() {
 
             float distortion = pow(max(distortion_simple + 0.1f, 0.0f), 3.0f);
 
-            vec2 distortedUVSample = textureCoordinates + distortion * 0.2 * screen_modelBHVector_norm;
+            vec2 distortedUVSample = textureCoordinates + distortion * 0.5f * bhScreenPercent * screen_modelBHVector_norm;
             color = texture(gColor, distortedUVSample);
         }
     }
-//    vec3 viewModelVector = eyePos - modelPos;
-//
-//    color = vec4(normalize(viewModelVector), 1.0f);
+}
 
-    //color = vec4(normalVal, 1.0f);
+void main() {
+    if (viewMode == REGULAR) {
+        regularRender();
+        return;
+    }
 
-    //color = vec4(vec3(stencilVal), 1.0f);
+    vec3 modelPos = texture(gPosition, textureCoordinates).rgb;
+    vec3 modelNormal = texture(gNormal, textureCoordinates).rgb;
+    float stencilVal = texture(gStencil, textureCoordinates).r;
 
-//    color = vec4(abs(normalize(modelPos)), 1.0f);
+    vec3 viewModelVector = eyePos - modelPos;
 
-    // color = vec4(vec3((textureCoordinates.x+textureCoordinates.y) / 2), 1.0f);
+    if (viewMode == NORMALS) {
+        //color = vec4(modelNormal, 1.0f);
+        color = vec4(modelNormal * 0.5f + vec3(0.5f), 1.0f);
+    }
+    else if (viewMode == POSITION) {
+        color = vec4(abs(normalize(modelPos)), 1.0f);
+    }
+    else if (viewMode == DISTANCE) {
+        float viewModelDistance = length(viewModelVector);
+        float viewModelDistance_norm = viewModelDistance / 1000.0f;  // Provided the frustum has depth 1000.0f, this is now in range (0, 1)
+
+        color = vec4(vec3(1 - viewModelDistance_norm), 1.0f);
+    }
+    else if (viewMode == STENCIL) {
+        color = vec4(vec3(stencilVal), 1.0f);
+    }
 }

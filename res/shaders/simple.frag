@@ -25,10 +25,12 @@ uniform layout(location = 10) vec3 eyePos;
 uniform layout(location = 11) vec3 ballPos;
 uniform layout(location = 12) float ballRadius;
 uniform layout(location = 13) int renderMode;  // SceneNodeType enum values (defined above)
+uniform layout(location = 14) vec3 modelColor;
+uniform LightSource lightSource[MAX_LIGHTS];
+
 uniform layout(binding = 0) sampler2D colorSampler;
 uniform layout(binding = 1) sampler2D normalMapSampler;
 uniform layout(binding = 2) sampler2D roughnessMapSampler;
-uniform LightSource lightSource[MAX_LIGHTS];
 
 out layout(location = 0) vec4 gColor;
 out layout(location = 1) vec4 gPosition;
@@ -172,6 +174,7 @@ void renderNormalMapped() {
 void main()
 {   
     if (renderMode == GEOMETRY) {
+        surfaceColor = modelColor;
         render3D();
         gColor = color;
         gPosition = vec4(modelPos, 1.0f);

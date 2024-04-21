@@ -64,4 +64,26 @@ void handleKeyboardInput(GLFWwindow* window)
     {
         glfwSetWindowShouldClose(window, GL_TRUE);
     }
+
+    // Edit viewMode setting
+    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
+    {
+        viewMode = REGULAR;
+    }
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
+    {
+        viewMode = NORMALS;
+    }
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
+    {
+        viewMode = POSITION;
+    }
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+    {
+        viewMode = DISTANCE;
+    }
+    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
+    {
+        viewMode = STENCIL;
+    }
 }
