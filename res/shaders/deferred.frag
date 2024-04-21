@@ -2,7 +2,7 @@
 
 in layout(location = 0) vec2 textureCoordinates;
 
-uniform layout(location = 10) vec3 eyePos;
+uniform layout(location = 20) vec3 eyePos;
 uniform layout(location = 14) vec3 bhPos;
 uniform layout(location = 15) vec3 bhScreenPos;
 uniform layout(location = 16) float bhRadius;
@@ -22,32 +22,6 @@ float hit = 0.0f;
 vec3 hitPos = vec3(0.0f);
 vec3 hitNormal = vec3(0.0f);
 
-//void raycast(vec3 rayOrigin, vec3 rayDir, vec3 sphereCenter, float sphereRadius) {
-//    float t = 0.0f;
-//    vec3 L = sphereCenter - rayOrigin;
-//    float tca = dot(L, rayDir);
-//
-//    if (tca < 0) {
-//        hit = 0.0f;
-//        return;
-//    }
-//
-//    float d2 = dot(L, L) - tca * tca;
-//    float sphereRadius2 = sphereRadius * sphereRadius;
-//
-//    if (d2 > sphereRadius2) {
-//        hit = 0.0f;
-//        return;
-//    }
-//
-//    float thc = sqrt(sphereRadius2 - d2);
-//    t = tca - thc;
-//
-//    hit = 1.0f;
-//    hitPos = rayOrigin + rayDir * t;
-//    hitNormal = normalize(hitPos - sphereCenter);
-//}
-
 void main() {
     // Sample the textures
     vec4 modelColor = texture(gColor, textureCoordinates);
@@ -58,36 +32,27 @@ void main() {
     color = modelColor;
 
     // If this pixel should be affected by the black hole ...
-    if (bhScreenPos.z < 1.0f) {
+    if (stencilVal == 1.0f) {
         color = clamp(vec4(modelColor.r+0.4f, modelColor.gba), 0.0f, 1.0f);
 
         vec3 viewModelVector = eyePos - modelPos;
         vec3 bhModelVector = bhPos - modelPos;
 
-        float bhShadowRadius = bhRadius / 2.0f;
-        
-//        raycast(eyePos, normalize(viewModelVector), bhPos, bhShadowRadius);
-//        if (hit == 1.0f) {
-//            color = vec4(vec3(0.0f), 1.0f);
-//        }
+        float bhEHRadius = bhRadius / 2.0f;  // Event horizon radius
 
-        //float distortion = 1 - dot(modelNormal, normalize(viewModelVector));
-        //color = vec4(vec3(distortion), 1.0f);
-        
-        // Perform black hole distortion
-        vec2 screen_bhPos = bhScreenPos.xy;  // (0, 0) is bottom left of screen, (windowWidth, windowHeight) is top right
-        vec2 screen_modelBHVector = screen_bhPos - (textureCoordinates * screenDimensions);
-        vec2 screen_modelBHVector_norm = normalize(screen_modelBHVector);
+        float distortion_simple = 1 - acos(dot(modelNormal, normalize(viewModelVector)));
 
-        float modelBHDist = length(screen_modelBHVector);
-        float relModelBHDist = modelBHDist / bhScreenPercent;
-        if (relModelBHDist < 100.0f) {
+        if (distortion_simple > 0.5) {
             color = vec4(vec3(0.0f), 1.0f);
         }
         else {
-            float relModelBHDist_norm = min(relModelBHDist / 600.0f, 1.0f);
+            color = vec4(vec3(distortion_simple), 1.0f);
+            
+            vec2 screen_modelPos = textureCoordinates * screenDimensions;
+            vec2 screen_modelBHVector = bhScreenPos.xy - screen_modelPos;
+            vec2 screen_modelBHVector_norm = normalize(screen_modelBHVector);
 
-            float distortion = pow(1 - relModelBHDist_norm, 3.0f);
+            float distortion = min(distortion_simple, 0.0f);
 
             vec2 distortedUVSample = textureCoordinates + distortion * screen_modelBHVector_norm;
             color = texture(gColor, distortedUVSample);

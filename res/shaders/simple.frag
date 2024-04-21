@@ -194,6 +194,7 @@ void main()
     }
     else if (renderMode == BLACK_HOLE) {
         render3D();
+        gNormal = vec4(normNormal, 1.0f);
         gStencil = vec4(1.0f);
     }
 }

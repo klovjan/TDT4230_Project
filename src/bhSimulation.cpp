@@ -24,6 +24,8 @@
 SceneNode* rootNode;
 SceneNode* boxNode;
 SceneNode* ballNode;
+std::vector<SceneNode*> boxNodes;
+std::vector<SceneNode*> ballNodes;
 // 2D geometry nodes
 SceneNode* textbox0Node;
 SceneNode* textbox1Node;
@@ -43,7 +45,7 @@ Mesh screenQuad;
 
 Framebuffer gBuffer;
 
-unsigned int NUM_LIGHTS;
+unsigned int NUM_LIGHTS = 3;
 
 float ballRadius = 3.0f;
 float bhRadius = 40.0f;
@@ -107,6 +109,27 @@ static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
     glfwSetCursorPos(window, windowWidth / 2, windowHeight / 2);
 }
 
+void createBoxGrid(int numRows, int numColumns, int numLayers, int distance) {
+    glm::vec3 dimensions = glm::vec3(30, 30, 30);
+    Mesh protoBox = cube(dimensions, glm::vec2(90), true, false);
+    unsigned int protoBoxVAO  = generateBuffer(protoBox);
+
+    boxNodes.resize(numRows*numColumns*numLayers);
+    for (int row = 0; row < numRows; row++) {
+        for (int column = 0; column < numColumns; column++) {
+            for (int layer = 0; layer < numLayers; layer++) {
+                boxNodes.at(row*column*layer) = createSceneNode();
+                boxNode->VAOIndexCount        = protoBox.indices.size();
+                boxNode->nodeType             = GEOMETRY;
+                boxNode->position             = glm::vec3(row, column, layer) * glm::vec3(distance);
+
+                rootNode->children.push_back(boxNodes.at(row*column*layer));
+                boxNode->vertexArrayObjectID = protoBoxVAO;
+            }
+        }
+    }
+}
+
 void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     options = clOptions;
 
@@ -152,8 +175,10 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     ballNode->vertexArrayObjectID    = ballVAO;
     ballNode->VAOIndexCount          = sphere.indices.size();
 
-    boxNode->position = { 0, -10, -80 };
+    boxNode->position = { 0, 0, 0 };
 
+    // Make box grid
+    //createBoxGrid(2, 3, 4, 50);
 
     /* Add textures for walls */
     // Load textures
@@ -168,7 +193,7 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     /* Add textures for walls */
 
     /* Add BH */
-    Mesh bhSphere = generateSphere(bhRadius, 100, 100, true);
+    Mesh bhSphere = generateSphere(bhRadius, 100, 100, false);
 
     unsigned int bhVAO = generateBuffer(bhSphere);
 
@@ -179,6 +204,7 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     bhNode->vertexArrayObjectID    = bhVAO;
     bhNode->VAOIndexCount          = bhSphere.indices.size();
     bhNode->nodeType               = BLACK_HOLE;
+    bhNode->position               = glm::vec3(0, 0, 50);
     /* Add BH */
 
     /* Add screen-filling quad */
@@ -189,8 +215,6 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
 
 
     /* Add point lights */
-    NUM_LIGHTS = 3;
-
     light0Node = createSceneNode();
     light1Node = createSceneNode();
     light2Node = createSceneNode();
@@ -236,7 +260,7 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
 void updateUniforms(glm::mat4 cameraTransform) {
     /// First pass uniforms
     // Pass camera position to fragment shader, for specular lighting
-    glm::vec3 eyePosition = glm::vec3(cameraTransform * glm::vec4(0, 0, 0, 1));
+    glm::vec3 eyePosition = glm::vec3(glm::inverse(cameraTransform) * glm::vec4(0, 0, 0, 1));
     gBufferShader->activate();
 
     glUniform3fv(10, 1, glm::value_ptr(eyePosition));
@@ -246,7 +270,7 @@ void updateUniforms(glm::mat4 cameraTransform) {
     /// Deferred shader uniforms
     deferredShader->activate();
 
-    glUniform3fv(10, 1, glm::value_ptr(eyePosition));
+    glUniform3fv(20, 1, glm::value_ptr(eyePosition));
 
     glm::vec3 bhPos = glm::vec3(bhNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1));
     glUniform3fv(14, 1, glm::value_ptr(bhPos));
@@ -260,16 +284,14 @@ void updateUniforms(glm::mat4 cameraTransform) {
     glm::vec3 bhScreenPos = glm::vec3(bhScreenX, bhScreenY, bhScreenZ);
     glUniform3fv(15, 1, glm::value_ptr(bhScreenPos));
 
-    glm::vec2 screenDimensions = glm::vec2(windowWidth, windowHeight);
-    glUniform2fv(18, 1, glm::value_ptr(screenDimensions));
-
-    printf("x: %f, y: %f, z: %f\n", bhScreenPos.x, bhScreenPos.y, bhNdcPos.z);
-
     glUniform1f(16, bhRadius);
 
-    float bhFrustumWidth = 2 * tan(FOV / 2.0f) * glm::length(eyePosition - bhPos);
-    float bhScreenPercent = bhRadius*2 / bhFrustumWidth;
+    float bhFrustumHeight = 2 * tan(FOV / 2.0f) * glm::length(eyePosition - bhPos);
+    float bhScreenPercent = bhRadius*2 / bhFrustumHeight;
     glUniform1f(17, bhScreenPercent);
+
+    glm::vec2 screenDimensions = glm::vec2(windowWidth, windowHeight);
+    glUniform2fv(18, 1, glm::value_ptr(screenDimensions));
 
     deferredShader->deactivate();
 }
@@ -439,7 +461,7 @@ void renderNode(SceneNode* node) {
                 // Disable all textures except the stencil
                 glColorMaski(0, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Color (disable)
                 glColorMaski(1, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Position (disable)
-                glColorMaski(2, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Normal (disable)
+                //glColorMaski(2, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Normal (disable)
 
                 // Pass renderMode uniform
                 glUniform1i(13, BLACK_HOLE);
@@ -453,7 +475,7 @@ void renderNode(SceneNode* node) {
                 // Re-enable all textures
                 glColorMaski(0, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
                 glColorMaski(1, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-                glColorMaski(2, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                //glColorMaski(2, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
                 gBufferShader->deactivate();
             }
             break;
