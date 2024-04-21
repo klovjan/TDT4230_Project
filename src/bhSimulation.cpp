@@ -50,7 +50,6 @@ float bhRadius = 40.0f;
 
 // These are heap allocated, because they should not be initialised at the start of the program
 Gloom::Shader* gBufferShader;
-Gloom::Shader* bhShader;
 Gloom::Shader* deferredShader;
 Gloom::Camera* camera;
 
@@ -126,9 +125,6 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
 
     gBufferShader = new Gloom::Shader();
     gBufferShader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
-
-    bhShader = new Gloom::Shader();
-    bhShader->makeBasicShader("../res/shaders/bhSimple.vert", "../res/shaders/deferred.frag");
 
     deferredShader = new Gloom::Shader();
     deferredShader->makeBasicShader("../res/shaders/deferred.vert", "../res/shaders/deferred.frag");
@@ -237,6 +233,47 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
+void updateUniforms(glm::mat4 cameraTransform) {
+    /// First pass uniforms
+    // Pass camera position to fragment shader, for specular lighting
+    glm::vec3 eyePosition = glm::vec3(cameraTransform * glm::vec4(0, 0, 0, 1));
+    gBufferShader->activate();
+
+    glUniform3fv(10, 1, glm::value_ptr(eyePosition));
+
+    gBufferShader->deactivate();
+
+    /// Deferred shader uniforms
+    deferredShader->activate();
+
+    glUniform3fv(10, 1, glm::value_ptr(eyePosition));
+
+    glm::vec3 bhPos = glm::vec3(bhNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1));
+    glUniform3fv(14, 1, glm::value_ptr(bhPos));
+
+    glm::vec4 bhWorldPos = bhNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
+    glm::vec4 bhClipPos = perspVP * bhWorldPos;
+    glm::vec3 bhNdcPos = glm::vec3(bhClipPos) / bhClipPos.w;
+    float bhScreenX = (windowWidth / 2.0f) * (bhNdcPos.x + 1.0f);
+    float bhScreenY = (windowHeight / 2.0f) * (bhNdcPos.y + 1.0f);
+    float bhScreenZ = (bhNdcPos.z + 1.0f) / 2.0f;
+    glm::vec3 bhScreenPos = glm::vec3(bhScreenX, bhScreenY, bhScreenZ);
+    glUniform3fv(15, 1, glm::value_ptr(bhScreenPos));
+
+    glm::vec2 screenDimensions = glm::vec2(windowWidth, windowHeight);
+    glUniform2fv(18, 1, glm::value_ptr(screenDimensions));
+
+    printf("x: %f, y: %f, z: %f\n", bhScreenPos.x, bhScreenPos.y, bhNdcPos.z);
+
+    glUniform1f(16, bhRadius);
+
+    float bhFrustumWidth = 2 * tan(FOV / 2.0f) * glm::length(eyePosition - bhPos);
+    float bhScreenPercent = bhRadius*2 / bhFrustumWidth;
+    glUniform1f(17, bhScreenPercent);
+
+    deferredShader->deactivate();
+}
+
 void updateFrame(GLFWwindow* window) {
     // double timeDelta = getTimeDeltaSeconds();
 
@@ -265,32 +302,7 @@ void updateFrame(GLFWwindow* window) {
     camera->updateCamera(getTimeDeltaSeconds());
     glm::mat4 cameraTransform = camera->getViewMatrix();
 
-    /// First pass uniforms
-    // Pass camera position to fragment shader, for specular lighting
-    glm::vec3 eyePosition = glm::vec3(cameraTransform * glm::vec4(0, 0, 0, 1));
-    gBufferShader->activate();
-    glUniform3fv(10, 1, glm::value_ptr(eyePosition));
-    gBufferShader->deactivate();
-
-    /// Deferred shader uniforms
-    deferredShader->activate();
-    glUniform3fv(10, 1, glm::value_ptr(eyePosition));
-
-    glm::vec3 bhPos = glm::vec3(bhNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1));
-    glUniform3fv(14, 1, glm::value_ptr(bhPos));
-
-    glm::vec4 bhWorldPos = bhNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
-    glm::vec4 bhClipPos = perspVP * bhWorldPos;
-    glm::vec3 bhNdcPos = glm::vec3(bhClipPos) / bhClipPos.w;
-    glUniform2fv(15, 1, glm::value_ptr(bhNdcPos));
-
-    glUniform1f(16, bhRadius);
-
-    float bhFrustumWidth = 2 * tan(FOV / 2.0f) * glm::length(eyePosition - bhPos);
-    float bhScreenPercent = bhRadius*2 / bhFrustumWidth;
-    glUniform1f(17, bhScreenPercent);
-
-    deferredShader->deactivate();
+    updateUniforms(cameraTransform);
 
     perspVP = perspProjection * cameraTransform;
     orthoVP = orthoProjection;

@@ -4,9 +4,10 @@ in layout(location = 0) vec2 textureCoordinates;
 
 uniform layout(location = 10) vec3 eyePos;
 uniform layout(location = 14) vec3 bhPos;
-uniform layout(location = 15) vec2 bhNdcPos;
+uniform layout(location = 15) vec3 bhScreenPos;
 uniform layout(location = 16) float bhRadius;
 uniform layout(location = 17) float bhScreenPercent;
+uniform layout(location = 18) vec2 screenDimensions;
 
 uniform layout(binding = 0) sampler2D gColor;
 uniform layout(binding = 1) sampler2D gPosition;
@@ -57,7 +58,7 @@ void main() {
     color = modelColor;
 
     // If this pixel should be affected by the black hole ...
-    if (true) {
+    if (bhScreenPos.z < 1.0f) {
         color = clamp(vec4(modelColor.r+0.4f, modelColor.gba), 0.0f, 1.0f);
 
         vec3 viewModelVector = eyePos - modelPos;
@@ -74,19 +75,21 @@ void main() {
         //color = vec4(vec3(distortion), 1.0f);
         
         // Perform black hole distortion
-        vec2 screen_bhPos = (bhNdcPos + 1.0f) / 2.0f;  // (0, 0) is bottom left of screen, (1, 1) is top right
-        vec2 screen_modelBHVector = screen_bhPos - textureCoordinates;
+        vec2 screen_bhPos = bhScreenPos.xy;  // (0, 0) is bottom left of screen, (windowWidth, windowHeight) is top right
+        vec2 screen_modelBHVector = screen_bhPos - (textureCoordinates * screenDimensions);
         vec2 screen_modelBHVector_norm = normalize(screen_modelBHVector);
 
-        float modelBHDist_norm = length(screen_modelBHVector) / bhScreenPercent / 2.0f;
-        if (modelBHDist_norm < 0.1f) {
+        float modelBHDist = length(screen_modelBHVector);
+        float relModelBHDist = modelBHDist / bhScreenPercent;
+        if (relModelBHDist < 100.0f) {
             color = vec4(vec3(0.0f), 1.0f);
         }
         else {
-            float distortion = pow(1 - modelBHDist_norm, 7.0f)*bhScreenPercent;
-            color = vec4(vec3(max(distortion, 0.0f)), 1.0f);
+            float relModelBHDist_norm = min(relModelBHDist / 600.0f, 1.0f);
 
-            vec2 distortedUVSample = textureCoordinates + max(distortion, 0.0f) * screen_modelBHVector_norm;
+            float distortion = pow(1 - relModelBHDist_norm, 3.0f);
+
+            vec2 distortedUVSample = textureCoordinates + distortion * screen_modelBHVector_norm;
             color = texture(gColor, distortedUVSample);
         }
 

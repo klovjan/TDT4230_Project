@@ -7,7 +7,7 @@
 #include <string>
 
 // Constants
-const int         windowWidth     = 1080;
+const int         windowWidth     = 1920;
 const int         windowHeight    = 1080;
 const std::string windowTitle     = "Black hole";
 const GLint       windowResizable = GL_FALSE;
