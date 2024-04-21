@@ -171,11 +171,12 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     boxNode->vertexArrayObjectID     = boxVAO;
     boxNode->VAOIndexCount           = box.indices.size();
     boxNode->nodeType                = NORMAL_MAPPED;
+    boxNode->position = { 0, 0, 0 };
 
     ballNode->vertexArrayObjectID    = ballVAO;
     ballNode->VAOIndexCount          = sphere.indices.size();
-
-    boxNode->position = { 0, 0, 0 };
+    ballNode->position = { 0, 0, -50 };
+    
 
     // Make box grid
     //createBoxGrid(2, 3, 4, 50);
@@ -193,7 +194,7 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     /* Add textures for walls */
 
     /* Add BH */
-    Mesh bhSphere = generateSphere(bhRadius, 100, 100, false);
+    Mesh bhSphere = generateSphere(bhRadius, 100, 100, true);
 
     unsigned int bhVAO = generateBuffer(bhSphere);
 
@@ -265,12 +266,17 @@ void updateUniforms(glm::mat4 cameraTransform) {
 
     glUniform3fv(10, 1, glm::value_ptr(eyePosition));
 
+    // For shadow calculation
+    glm::vec3 ballPos = glm::vec3(ballNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1));
+    glUniform3fv(11, 1, glm::value_ptr(ballPos));
+    glUniform1f(12, float(ballRadius));
+
     gBufferShader->deactivate();
 
     /// Deferred shader uniforms
     deferredShader->activate();
 
-    glUniform3fv(20, 1, glm::value_ptr(eyePosition));
+    glUniform3fv(10, 1, glm::value_ptr(eyePosition));
 
     glm::vec3 bhPos = glm::vec3(bhNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1));
     glUniform3fv(14, 1, glm::value_ptr(bhPos));
@@ -314,10 +320,6 @@ void updateFrame(GLFWwindow* window) {
         mouseRightPressed = false;
     }
 
-    ballPosition.x = boxNode->position.x;
-    ballPosition.y = boxNode->position.y;
-    ballPosition.z = boxNode->position.z;
-
     glm::mat4 perspProjection = glm::perspective(FOV, float(windowWidth) / float(windowHeight), 0.1f, 1000.f);
     glm::mat4 orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight), 0.1f, 350.f);
     
@@ -330,7 +332,6 @@ void updateFrame(GLFWwindow* window) {
     orthoVP = orthoProjection;
 
     // Move and rotate various SceneNodes
-    ballNode->position = ballPosition;
     ballNode->scale = glm::vec3(ballRadius);
     ballNode->rotation = { 0, totalElapsedTime*2, 0 };
 
@@ -386,11 +387,6 @@ void renderNode(SceneNode* node) {
     // Calculate and pass normal matrix
     glm::mat3 normalMatrix = glm::transpose(glm::inverse(node->currentTransformationMatrix));
     glUniformMatrix3fv(4, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-    
-    // For shadow calculation
-    glm::vec3 ballPos = glm::vec3(ballNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1));
-    glUniform3fv(11, 1, glm::value_ptr(ballPos));
-    glUniform1f(12, float(ballRadius));
 
     gBufferShader->deactivate();
 
