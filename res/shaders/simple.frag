@@ -97,7 +97,7 @@ void render3D()
     ambientColor = vec3(0.10f);
 
     // Diffuse, Specular
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < numLights; i++) {
         vec3 lightDir = lightSource[i].coord - modelPos;
         vec3 normLightDir = normalize(lightDir);
 
@@ -105,19 +105,19 @@ void render3D()
         softShadowFactor = 1.0f;
 
         noShadow = false;
-        if (length(lightDir) < length(ballDir) || dot(lightDir, ballDir) < 0.0f) {
-            noShadow = true;
-        }
-
-        float rejectionLength = length(reject(ballDir, lightDir));
-        if (rejectionLength < ballRadius && !noShadow) {
-            // The light is obscured by the ball; jump to next light source
-            continue;
-        }
-        else if (rejectionLength < softShadowBallRadius && !noShadow) {
-            // The light ray is close enough to the ball; make soft shadow
-            softShadowFactor = (rejectionLength - ballRadius) / (softShadowBallRadius - ballRadius);
-        }
+//        if (length(lightDir) < length(ballDir) || dot(lightDir, ballDir) < 0.0f) {
+//            noShadow = true;
+//        }
+//
+//        float rejectionLength = length(reject(ballDir, lightDir));
+//        if (rejectionLength < ballRadius && !noShadow) {
+//            // The light is obscured by the ball; jump to next light source
+//            continue;
+//        }
+//        else if (rejectionLength < softShadowBallRadius && !noShadow) {
+//            // The light ray is close enough to the ball; make soft shadow
+//            softShadowFactor = (rejectionLength - ballRadius) / (softShadowBallRadius - ballRadius);
+//        }
 
         // Attenuation
         float lightDistance = length(lightDir);

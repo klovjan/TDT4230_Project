@@ -1,5 +1,12 @@
 #version 430 core
 
+// Definitions corresponding to ViewMode enum
+#define REGULAR 0
+#define NORMALS 1
+#define POSITION 2
+#define DISTANCE 3
+#define STENCIL 4
+
 in layout(location = 0) vec2 textureCoordinates;
 
 uniform layout(location = 10) vec3 eyePos;

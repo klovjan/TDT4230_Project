@@ -203,7 +203,7 @@ Mesh generateSphere(float sphereRadius, int slices, int layers, bool inverted) {
                 indices.emplace_back(i + 4);
             }
 
-            // Note: inverted is not handled here
+            // Note: inverted is not implemented for UVs
             for (int j = 0; j < 6; j++) {
                 glm::vec3 vertex = vertices.at(i+j);
                 uvs.emplace_back(
