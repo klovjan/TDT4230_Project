@@ -1,6 +1,6 @@
 #version 430 core
 
-#define MAX_LIGHTS 10
+#define MAX_LIGHTS 100
 
 // Definitions corresponding to SceneNodeType enum
 #define GEOMETRY 0
@@ -64,7 +64,7 @@ float specularFactor = 64.0f;  // Note: NOT const because of potential roughness
 float atten = 1.0f;
 
 // Attenuation coefficients
-float attenCoeffA = 0.009f;
+float attenCoeffA = 0.007f;
 float attenCoeffB = 0.001f;
 float attenCoeffC = 0.001f;
 

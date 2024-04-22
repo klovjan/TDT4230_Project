@@ -43,6 +43,7 @@ SceneNode* light7Node;
 SceneNode* light8Node;
 SceneNode* light9Node;
 SceneNode* light10Node;
+std::vector<SceneNode*> lightNodes;
 
 // Projection matrix constants
 float FOV = glm::radians(70.0f);
@@ -53,7 +54,7 @@ Mesh screenQuad;
 
 Framebuffer gBuffer;
 
-unsigned int NUM_LIGHTS = 10;
+unsigned int NUM_LIGHTS = 3;
 
 float ballRadius = 3.0f;
 float bhRadius = 80.0f;
@@ -139,33 +140,53 @@ void createBoxGrid(int numRows, int numColumns, int numLayers, float size, float
         for (int column = 0; column < numColumns; column++) {
             for (int layer = 0; layer < numLayers; layer++) {
                 int index = row * numColumns * numLayers + column * numLayers + layer;
-                SceneNode* gridBoxNode = createSceneNode();
-                boxNodes.at(index) = gridBoxNode;
-                gridBoxNode->VAOIndexCount    = protoBox.indices.size();
-                gridBoxNode->nodeType         = GEOMETRY;
-                gridBoxNode->position         = glm::vec3(row, column, layer) * glm::vec3(distance) + startingCoordinates;
+                SceneNode* node = createSceneNode();
+                boxNodes.at(index) = node;
+                node->VAOIndexCount    = protoBox.indices.size();
+                node->nodeType         = GEOMETRY;
+                node->position         = glm::vec3(row, column, layer) * glm::vec3(distance) + startingCoordinates;
                 
                 // Cycle through colours
                 float r = float(row) / float(numRows - 1);
                 float g = float(column) / float(numColumns - 1);
                 float b = float(layer) / float(numLayers - 1);
-                gridBoxNode->color = basicColors.at(index % basicColors.size());
+                node->color = basicColors.at(index % basicColors.size());
 
 
-                rootNode->children.push_back(gridBoxNode);
-                gridBoxNode->vertexArrayObjectID = protoBoxVAO;
+                rootNode->children.push_back(node);
+                node->vertexArrayObjectID = protoBoxVAO;
             }
         }
     }
 }
 
-//void createLights() {
-//    for (int y = 0; y <= 1; y++)
-//    for (int z = 0; z <= 1; z++)
-//    for (int x = 0; x <= 1; x++) {
-//        
-//    }
-//}
+// Create an NxNxN grid of lights centered around the origin, with extremes (-160, -160, -160) and (160, 160, 160)
+void createLightGrid(int N) {
+    lightNodes.resize(N * N * N);
+
+    float step = 320.0f / (N - 1);  // Calculate the distance between light sources
+    for (int row = 0; row < N; ++row) {
+        for (int column = 0; column < N; ++column) {
+            for (int layer = 0; layer < N; ++layer) {
+                int index = row * N * N + column * N + layer;
+
+                float x = -160.0f + row * step;
+                float y = -160.0f + column * step;
+                float z = -160.0f + layer * step;
+
+                SceneNode* node = createSceneNode();
+                lightNodes.at(index) = node;
+                rootNode->children.push_back(node);
+
+                node->position = glm::vec3(x, y, z);
+                node->nodeType = POINT_LIGHT;
+                node->lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+                node->lightID = NUM_LIGHTS++;
+            }
+        }
+    }
+    printf("%i\n", NUM_LIGHTS);
+}
 
 void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     options = clOptions;
@@ -260,26 +281,10 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     light0Node = createSceneNode();
     light1Node = createSceneNode();
     light2Node = createSceneNode();
-    light3Node = createSceneNode();
-    light4Node = createSceneNode();
-    light5Node = createSceneNode();
-    light6Node = createSceneNode();
-    light7Node = createSceneNode();
-    light8Node = createSceneNode();
-    light9Node = createSceneNode();
-    light10Node = createSceneNode();
 
     rootNode->children.push_back(light0Node);
     rootNode->children.push_back(light1Node);
     rootNode->children.push_back(light2Node);
-    rootNode->children.push_back(light3Node);
-    rootNode->children.push_back(light4Node);
-    rootNode->children.push_back(light5Node);
-    rootNode->children.push_back(light6Node);
-    rootNode->children.push_back(light7Node);
-    rootNode->children.push_back(light8Node);
-    rootNode->children.push_back(light9Node);
-    rootNode->children.push_back(light10Node);
 
     light0Node->position             = glm::vec3(50.0f, 0.0f, -60.0f);
     light0Node->nodeType             = POINT_LIGHT;
@@ -296,55 +301,10 @@ void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
     light2Node->lightColor           = glm::vec3(1.0f, 1.0f, 1.0f);
     light2Node->lightID              = 2;
 
-    float lightMinX = boxCoordinates.x - boxDimensions.x / 2 + 20;
-    float lightMaxX = boxCoordinates.x + boxDimensions.x / 2 - 20;
-    float lightMinY = boxCoordinates.y - boxDimensions.y / 2 + 20;
-    float lightMaxY = boxCoordinates.y + boxDimensions.y / 2 - 20;
-    float lightMinZ = boxCoordinates.z - boxDimensions.z / 2 + 20;
-    float lightMaxZ = boxCoordinates.z + boxDimensions.z / 2 - 20;
-
-    light3Node->position             = glm::vec3(lightMinX, lightMinY, lightMinZ);
-    light3Node->nodeType             = POINT_LIGHT;
-    light3Node->lightColor           = glm::vec3(1.0f, 1.0f, 1.0f);
-    light3Node->lightID              = 3;
-
-    light4Node->position             = glm::vec3(lightMinX, lightMinY, lightMaxZ);
-    light4Node->nodeType             = POINT_LIGHT;
-    light4Node->lightColor           = glm::vec3(1.0f, 1.0f, 1.0f);
-    light4Node->lightID              = 4;
-
-    light5Node->position             = glm::vec3(lightMinX, lightMaxY, lightMinZ);
-    light5Node->nodeType             = POINT_LIGHT;
-    light5Node->lightColor           = glm::vec3(1.0f, 1.0f, 1.0f);
-    light5Node->lightID              = 5;
-
-    light6Node->position             = glm::vec3(lightMinX, lightMaxY, lightMaxZ);
-    light6Node->nodeType             = POINT_LIGHT;
-    light6Node->lightColor           = glm::vec3(1.0f, 1.0f, 1.0f);
-    light6Node->lightID              = 6;
-
-    light7Node->position             = glm::vec3(lightMaxX, lightMinY, lightMinZ);
-    light7Node->nodeType             = POINT_LIGHT;
-    light7Node->lightColor           = glm::vec3(1.0f, 1.0f, 1.0f);
-    light7Node->lightID              = 7;
-    
-    light8Node->position             = glm::vec3(lightMaxX, lightMinY, lightMaxZ);
-    light8Node->nodeType             = POINT_LIGHT;
-    light8Node->lightColor           = glm::vec3(1.0f, 1.0f, 1.0f);
-    light8Node->lightID              = 8;
-
-    light9Node->position             = glm::vec3(lightMaxX, lightMaxY, lightMinZ);
-    light9Node->nodeType             = POINT_LIGHT;
-    light9Node->lightColor           = glm::vec3(1.0f, 1.0f, 1.0f);
-    light9Node->lightID              = 9;
-
-    light10Node->position             = glm::vec3(lightMaxX, lightMaxY, lightMaxZ);
-    light10Node->nodeType             = POINT_LIGHT;
-    light10Node->lightColor           = glm::vec3(1.0f, 1.0f, 1.0f);
-    light10Node->lightID              = 10;
+    createLightGrid(3);
 
     gBufferShader->activate();
-    glUniform1i(6, NUM_LIGHTS);  // Note: doing this here assumes NUM_LIGHTS is constant
+    glUniform1i(6, NUM_LIGHTS);  // Note: doing this here assumes NUM_LIGHTS is constant after this
     gBufferShader->deactivate();
     /* Add point lights */
 
