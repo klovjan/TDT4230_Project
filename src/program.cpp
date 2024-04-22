@@ -72,7 +72,7 @@ void handleKeyboardInput(GLFWwindow* window)
     }
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
     {
-        viewMode = NORMALS;
+        viewMode = COLOR;
     }
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
     {
@@ -83,6 +83,10 @@ void handleKeyboardInput(GLFWwindow* window)
         viewMode = DISTANCE;
     }
     if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
+    {
+        viewMode = NORMALS;
+    }
+    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
     {
         viewMode = STENCIL;
     }

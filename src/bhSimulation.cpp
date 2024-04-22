@@ -185,7 +185,6 @@ void createLightGrid(int N) {
             }
         }
     }
-    printf("%i\n", NUM_LIGHTS);
 }
 
 void initScene(GLFWwindow* window, CommandLineOptions clOptions) {
@@ -557,7 +556,7 @@ void renderNode(SceneNode* node) {
 void renderToGBuffer(GLFWwindow* window) {
     gBufferShader->activate();
 
-    // Set background color to white
+    // Set clear color to white-ish
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     

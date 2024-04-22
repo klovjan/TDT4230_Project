@@ -2,10 +2,11 @@
 
 // Definitions corresponding to ViewMode enum
 #define REGULAR 0
-#define NORMALS 1
+#define COLOR 1
 #define POSITION 2
 #define DISTANCE 3
-#define STENCIL 4
+#define NORMALS 4
+#define STENCIL 5
 
 in layout(location = 0) vec2 textureCoordinates;
 
@@ -73,7 +74,6 @@ void regularRender() {
         float bhEHRadius = bhRadius / 2.0f;  // Event horizon radius
 
         float distortion_simple = 1 - acos(dot(modelNormal, normalize(viewModelVector)));  // Note: modelNormal belongs to bhSphere wherever stencil is 1
-        float rejectionLength = length(reject(viewModelVector, bhModelVector));
 
         if ((length(viewModelVector) < length(bhModelVector)) || (dot(viewModelVector, bhModelVector) < 0.0f)) {
             return;
@@ -102,24 +102,28 @@ void main() {
         return;
     }
 
+    vec4 modelColor = texture(gColor, textureCoordinates);
     vec3 modelPos = texture(gPosition, textureCoordinates).rgb;
     vec3 modelNormal = texture(gNormal, textureCoordinates).rgb;
     float stencilVal = texture(gStencil, textureCoordinates).r;
 
     vec3 viewModelVector = eyePos - modelPos;
 
-    if (viewMode == NORMALS) {
-        //color = vec4(modelNormal, 1.0f);
-        color = vec4(modelNormal * 0.5f + vec3(0.5f), 1.0f);
+    if (viewMode == COLOR) {
+        color = modelColor;
     }
     else if (viewMode == POSITION) {
-        color = vec4(abs(normalize(modelPos)), 1.0f);
+        color = vec4(normalize(modelPos) * 0.5f + vec3(0.5f), 1.0f);
     }
     else if (viewMode == DISTANCE) {
         float viewModelDistance = length(viewModelVector);
         float viewModelDistance_norm = viewModelDistance / 1000.0f;  // Provided the frustum has depth 1000.0f, this is now in range (0, 1)
 
         color = vec4(vec3(1 - viewModelDistance_norm), 1.0f);
+    }
+    else if (viewMode == NORMALS) {
+        //color = vec4(modelNormal, 1.0f);
+        color = vec4(modelNormal * 0.5f + vec3(0.5f), 1.0f);
     }
     else if (viewMode == STENCIL) {
         color = vec4(vec3(stencilVal), 1.0f);
