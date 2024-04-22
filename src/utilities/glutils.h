@@ -9,6 +9,7 @@ typedef struct Framebuffer {
     unsigned int posTexture;      // Position attachment texture ID
     unsigned int normalTexture;   // Normal attachment texture ID
     unsigned int stencilTexture;  // Stencil attachment texture ID
+    unsigned int bhNormalTexture; // BH normal attachment texture ID
 } Framebuffer;
 
 unsigned int generateBuffer(Mesh &mesh);

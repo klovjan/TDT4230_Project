@@ -118,7 +118,7 @@ Framebuffer initGBuffer() {
     unsigned int gBufferID;
     glGenFramebuffers(1, &gBufferID);
     glBindFramebuffer(GL_FRAMEBUFFER, gBufferID);
-    unsigned int gColor, gPosition, gNormal, gStencil, gDepth;
+    unsigned int gColor, gPosition, gNormal, gStencil, gBHNormal, gDepth;
 
     // - color buffer
     glGenTextures(1, &gColor);
@@ -152,6 +152,14 @@ Framebuffer initGBuffer() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, gStencil, 0);
 
+    // - black hole normal buffer
+    glGenTextures(1, &gBHNormal);
+    glBindTexture(GL_TEXTURE_2D, gBHNormal);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, windowWidth, windowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, gBHNormal, 0);
+
     // - depth renderbuffer
     glGenRenderbuffers(1, &gDepth);
     glBindRenderbuffer(GL_RENDERBUFFER, gDepth);
@@ -159,8 +167,8 @@ Framebuffer initGBuffer() {
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, gDepth);
     
     // - tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
-    unsigned int attachments[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-    glDrawBuffers(4, attachments);
+    unsigned int attachments[5] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
+    glDrawBuffers(5, attachments);
 
     // - rebind the default framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -172,6 +180,7 @@ Framebuffer initGBuffer() {
     framebuffer.posTexture = gPosition;
     framebuffer.normalTexture = gNormal;
     framebuffer.stencilTexture = gStencil;
+    framebuffer.bhNormalTexture = gBHNormal;
 
     return framebuffer;
 }

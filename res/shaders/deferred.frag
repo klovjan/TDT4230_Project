@@ -7,6 +7,7 @@
 #define DISTANCE 3
 #define NORMALS 4
 #define STENCIL 5
+#define BH_NORMALS 6
 
 in layout(location = 0) vec2 textureCoordinates;
 
@@ -22,6 +23,7 @@ uniform layout(binding = 0) sampler2D gColor;
 uniform layout(binding = 1) sampler2D gPosition;
 uniform layout(binding = 2) sampler2D gNormal;
 uniform layout(binding = 3) sampler2D gStencil;
+uniform layout(binding = 4) sampler2D gBHNormal;
 
 out vec4 color;
 
@@ -31,38 +33,13 @@ float hit = 0.0f;
 vec3 hitPos = vec3(0.0f);
 vec3 hitNormal = vec3(0.0f);
 
-//void raycast(vec3 rayOrigin, vec3 rayDir, vec3 sphereCenter, float sphereRadius) {
-//    float t = 0.0f;
-//    vec3 L = sphereCenter - rayOrigin;
-//    float tca = dot(L, -rayDir);
-//
-//    if (tca < 0) {
-//        hit = 0.0f;
-//        return;
-//    }
-//
-//    float d2 = dot(L, L) - tca * tca;
-//    float sphereRadius2 = sphereRadius * sphereRadius;
-//
-//    if (d2 > sphereRadius2) {
-//        hit = 0.0f;
-//        return;
-//    }
-//
-//    float thc = sqrt(sphereRadius2 - d2);
-//    t = tca - thc;
-//
-//    hit = 1.0f;
-//    hitPos = rayOrigin - rayDir * t;
-//    hitNormal = normalize(hitPos - sphereCenter);
-//}
-
 void regularRender() {
     // Sample the textures
     vec4 modelColor = texture(gColor, textureCoordinates);
     vec3 modelPos = texture(gPosition, textureCoordinates).rgb;
     vec3 modelNormal = texture(gNormal, textureCoordinates).rgb;
     float stencilVal = texture(gStencil, textureCoordinates).r;
+    vec3 bhModelNormal = texture(gBHNormal, textureCoordinates).rgb;
     
     color = modelColor;
 
@@ -73,7 +50,7 @@ void regularRender() {
 
         float bhEHRadius = bhRadius / 2.0f;  // Event horizon radius
 
-        float distortion_simple = 1 - acos(dot(modelNormal, normalize(viewModelVector)));  // Note: modelNormal belongs to bhSphere wherever stencil is 1
+        float distortion_simple = 1 - acos(dot(bhModelNormal, normalize(viewModelVector)));  // Note: bhModelNormal belongs to bhSphere wherever stencil is 1
 
         if ((length(viewModelVector) < length(bhModelVector)) || (dot(viewModelVector, bhModelVector) < 0.0f)) {
             return;
@@ -106,6 +83,7 @@ void main() {
     vec3 modelPos = texture(gPosition, textureCoordinates).rgb;
     vec3 modelNormal = texture(gNormal, textureCoordinates).rgb;
     float stencilVal = texture(gStencil, textureCoordinates).r;
+    vec3 bhModelNormal = texture(gBHNormal, textureCoordinates).rgb;
 
     vec3 viewModelVector = eyePos - modelPos;
 
@@ -122,10 +100,12 @@ void main() {
         color = vec4(vec3(1 - viewModelDistance_norm), 1.0f);
     }
     else if (viewMode == NORMALS) {
-        //color = vec4(modelNormal, 1.0f);
         color = vec4(modelNormal * 0.5f + vec3(0.5f), 1.0f);
     }
     else if (viewMode == STENCIL) {
         color = vec4(vec3(stencilVal), 1.0f);
+    }
+    else if (viewMode == BH_NORMALS) {
+        color = vec4(bhModelNormal * 0.5f + vec3(0.5f), 1.0f);
     }
 }

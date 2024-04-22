@@ -4,7 +4,7 @@
 #include "sceneGraph.hpp"
 
 enum ViewMode {
-	REGULAR, COLOR, POSITION, DISTANCE, NORMALS, STENCIL
+	REGULAR, COLOR, POSITION, DISTANCE, NORMALS, STENCIL, BH_NORMALS
 };
 
 extern ViewMode viewMode;

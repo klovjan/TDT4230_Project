@@ -36,6 +36,7 @@ out layout(location = 0) vec4 gColor;
 out layout(location = 1) vec4 gPosition;
 out layout(location = 2) vec4 gNormal;
 out layout(location = 3) vec4 gStencil;
+out layout(location = 4) vec4 gBHNormal;
 
 // Not an output value, since we are rendering into the gBuffer
 vec4 color;
@@ -107,19 +108,6 @@ void render3D()
         softShadowFactor = 1.0f;
 
         noShadow = false;
-//        if (length(lightDir) < length(ballDir) || dot(lightDir, ballDir) < 0.0f) {
-//            noShadow = true;
-//        }
-//
-//        float rejectionLength = length(reject(ballDir, lightDir));
-//        if (rejectionLength < ballRadius && !noShadow) {
-//            // The light is obscured by the ball; jump to next light source
-//            continue;
-//        }
-//        else if (rejectionLength < softShadowBallRadius && !noShadow) {
-//            // The light ray is close enough to the ball; make soft shadow
-//            softShadowFactor = (rejectionLength - ballRadius) / (softShadowBallRadius - ballRadius);
-//        }
 
         // Attenuation
         float lightDistance = length(lightDir);
@@ -197,7 +185,7 @@ void main()
     }
     else if (renderMode == BLACK_HOLE) {
         render3D();
-        gNormal = vec4(normNormal, 1.0f);
         gStencil = vec4(1.0f);
+        gBHNormal = vec4(normNormal, 1.0f);
     }
 }

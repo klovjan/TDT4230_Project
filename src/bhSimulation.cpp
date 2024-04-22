@@ -523,10 +523,13 @@ void renderNode(SceneNode* node) {
         case BLACK_HOLE:
             if (node->vertexArrayObjectID != -1) {
                 gBufferShader->activate();
+
                 // Disable all textures except the stencil
                 glColorMaski(0, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Color (disable)
                 glColorMaski(1, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Position (disable)
-                //glColorMaski(2, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Normal (disable)
+                glColorMaski(2, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Normal (disable)
+                // Enable bhNormal texture
+                glColorMaski(4, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); // bhNormal (enable)
 
                 // Pass renderMode uniform
                 glUniform1i(13, BLACK_HOLE);
@@ -540,7 +543,10 @@ void renderNode(SceneNode* node) {
                 // Re-enable all textures
                 glColorMaski(0, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
                 glColorMaski(1, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-                //glColorMaski(2, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                glColorMaski(2, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                // Disable bhNormal texture
+                glColorMaski(4, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
                 gBufferShader->deactivate();
             }
             break;
@@ -558,8 +564,13 @@ void renderToGBuffer(GLFWwindow* window) {
 
     // Set clear color to white-ish
     glClearColor(1.0, 1.0, 1.0, 1.0);
+
+    // Re-enable bhNormal texture to clear it (hacky solution)
+    glColorMaski(4, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
+    // Re-disable bhNormal
+    glColorMaski(4, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
     renderNode(rootNode);
 
     gBufferShader->deactivate();
@@ -576,6 +587,7 @@ void renderToScreen(GLFWwindow* window) {
     glBindTextureUnit(1, gBuffer.posTexture);
     glBindTextureUnit(2, gBuffer.normalTexture);
     glBindTextureUnit(3, gBuffer.stencilTexture);
+    glBindTextureUnit(4, gBuffer.bhNormalTexture);
 
     glBindVertexArray(screenQuadVAO);
     glDrawElements(GL_TRIANGLES, screenQuad.indices.size(), GL_UNSIGNED_INT, nullptr);

@@ -90,4 +90,8 @@ void handleKeyboardInput(GLFWwindow* window)
     {
         viewMode = STENCIL;
     }
+    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
+    {
+        viewMode = BH_NORMALS;
+    }
 }
