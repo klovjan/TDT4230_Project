@@ -46,7 +46,7 @@ SceneNode* light10Node;
 std::vector<SceneNode*> lightNodes;
 
 // Projection matrix constants
-float FOV = glm::radians(70.0f);
+float FOV = glm::radians(80.0f);
 
 // Screen-filling quad for deferred rendering
 unsigned int screenQuadVAO;

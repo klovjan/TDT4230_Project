@@ -138,8 +138,6 @@ void render3D()
     
     // Phong equation
     color = vec4(emittedColor + ambientColor + diffuseColor*diffuseCoeff + specularColor*specularCoeff + noise, 1.0f);
-
-    //color = vec4(normNormal * 0.5f + vec3(0.5f), 1.0f);
 }
 
 void render2D() {
